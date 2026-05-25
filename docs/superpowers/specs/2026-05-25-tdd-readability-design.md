@@ -1,7 +1,7 @@
 # Design: TDD Readability Profile (Triple-Audience)
 
 **Date:** 2026-05-25  
-**Status:** Implemented  
+**Status:** Implemented (label requirements superseded by `2026-05-25-tdd-narrative-profile-design.md`)  
 **Scope:** Improve readability of `prd-to-tdd` output for PM, backend developers, and audit readers **equally**, without splitting into multiple files or weakening strict depth coverage.
 
 **Related specs:**
