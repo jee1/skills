@@ -1,135 +1,105 @@
-# Narrative Rules — Forward-Only TDD
+# Narrative Rules — Story-First TDD
 
-TDD prose must read **front to back like a novel**. Each chapter assumes only what earlier chapters established.
-
-## 기승전결 Mapping
-
-| Chapter | Role | Reader takeaway |
-|---------|------|-----------------|
-| 1. 서문 | 起 | Why this document exists |
-| 2. 배경과 문제 | 起→承 | What problem and scope (from PRD) |
-| 3. 현재 시스템 / 시작점 | 承 | What exists today (code or scaffold) |
-| 4. 갭과 설계 전환 / 설계 결정 | 转 | Why we change or choose; core decisions |
-| 5. 상위설계 | 结 (macro) | Target architecture, components, data flow |
-| 6. 상세설계 | 结 (micro) | APIs, schemas, processing logic |
-| 7. 마무리 | 结 (close) | Rollout, risks, open questions |
+TDD prose must read **front to back like a novel**. Each chapter builds on what earlier chapters established. **Do not use role labels** (`요약:`, `#### 한눈에`, `Who:`/`Why:`) — the reader should infer purpose from the writing.
 
 Detail rules for Ch.5–6: [design-sections.md](design-sections.md).
 
-## 6하원칙 per Chapter
+## 기승전결 Mapping
 
-| Chapter | Who | What | When | Where | Why | How |
-|---------|-----|------|------|-------|-----|-----|
-| 1 | ✓ | | ✓ | | ✓ | |
-| 2 | | ✓ | | ✓ | | |
-| 3 | | ✓ | | | | ✓ (current) |
-| 4 | | ✓ | | | ✓ | ✓ (direction) |
-| 5 | | ✓ | | | | ✓ (high-level) |
-| 6 | | ✓ | | | | ✓ (detailed) |
-| 7 | | | ✓ | | | ✓ (rollout) |
+| Chapter | Role | Narrative job |
+|---------|------|---------------|
+| 1. 서문 | 起 | Opening paragraph + scope; why this document exists |
+| 2. 배경과 문제 | 起→承 | Problem and scope in connected prose |
+| 3. 현재 시스템 / 시작점 | 承 | What exists today (code or scaffold) |
+| 4. 갭과 설계 전환 / 설계 결정 | 转 | Gap → why change; Tier-1 decisions |
+| 5. 상위설계 | 结 (macro) | Target architecture as a consequence of Ch.4 |
+| 6. 상세설계 | 结 (micro) | Spec tables grounded in Ch.5 names |
+| 7. 마무리 | 结 (close) | Rollout, risks, open questions |
 
-Every chapter must visibly answer its required dimensions (one sentence minimum).
+## 6하원칙 (embedded in prose — no labels)
+
+Answer each dimension **inside normal sentences**. Never prefix lines with `Who:` / `Why:` / `누가:` / `왜:`.
+
+| Chapter | Must answer (in prose) |
+|---------|------------------------|
+| 1 | Who reads this, why now, PRD source |
+| 2 | What problem, where (scope/boundary) |
+| 3 | What exists, how it works today |
+| 4 | What changes, why, how (direction) |
+| 5 | What the target system does, how at high level |
+| 6 | What interfaces/entities exist, how in detail |
+| 7 | When rollout, how to deploy, remaining risks |
+
+**Minimum:** Ch.2, Ch.3, Ch.4 each **≥8 sentences** of non-table body (enforced by `--narrative`).
+
+## Chapter bridges
+
+The **last sentence** of chapter N must connect to the **first sentence** of chapter N+1:
+
+- Shared domain noun (order, payment, API, …), **or**
+- Explicit consequence words: `때문`, `따라`, `현재`, `PRD`, `미구현`, `갭`, …
+
+Forbidden: temporal back-refs (`앞서`, `위에서`, `see above`) — **restate** needed context instead.
+
+## Anti-label policy (Ch.2–7 body)
+
+| Forbidden | Allowed |
+|-----------|---------|
+| `요약:` line prefix | Topic `###` titles (e.g. `### API 및 인터페이스`) |
+| `#### 한눈에` | Ch.4 `### 결정 요약` (audit index table only) |
+| `### TL;DR` in body | Ch.1 `### Goals / Non-Goals`, `### 이 문서 읽는 법`, `### 목차` |
+| `Who:` / `Why:` / `누가:` / `왜:` … | `[ref:A-n]`, Ch.4 Tier-1 blockquotes |
+
+## Prose-then-table (Ch.5–6)
+
+Each `###` subsection:
+
+1. **Lead prose** — Ch.5: ≥2 sentences before diagram/lists/tables; Ch.6: ≥1 sentence before tables
+2. **Structure** — mermaid (Ch.5 architecture), tables, numbered flows
+3. **Tier-2** — `[ref:A-n]` inline; Appendix A row; **no** `> **사실:**` in Ch.5–6
+
+Ch.6 may include a **dev index table** right after the chapter intro paragraph (no `###` heading). Introduce it in prose: “아래 표는 …”.
 
 ## Forward-Only Rules
 
-1. **No temporal back-reference** — never point backward or forward in time:
-   - Forbidden (KO): 앞서, 위에서, 아래에서, 후술, 나중에, 상기, 전술
-   - Forbidden (EN): as mentioned, see above, see below, later, previously, aforementioned
+1. **No temporal back-reference** — see forbidden list in validator (`validate-tdd.py`).
+2. **Define before use** — introduce terms and component names before reusing them.
+3. **Brownfield:** code reality in Ch.3; PRD-only in Ch.4 as `미구현`; conflict → code wins, labeled in Ch.4.
+4. **Greenfield:** Ch.3 states no domain code; Ch.4 introduces decisions from PRD + stack.
+5. **No repair appendix** — Appendix A/B are citation archives only.
+6. **Static anchors OK** — `[§6](#6-상세설계)`, `[ref:A-3]`; not “see above”.
 
-2. **Define before use** — introduce a term, acronym, or component name before using it in another role.
+## Ch.1 서문
 
-3. **Brownfield ordering**
-   - Code-only reality → first in Ch.3
-   - PRD-only requirement → first in Ch.4 as `미구현` or `PRD-only`
-   - Conflict → code wins; label in Ch.4
-
-4. **Greenfield ordering**
-   - Ch.3 states explicitly: no application/domain code yet
-   - Do not invent modules, services, or tables that do not exist
-   - Ch.4 introduces design decisions from PRD + stack constraints
-
-5. **No repair appendix** — do not add a section that re-explains earlier chapters (Appendix A/B are citation archives, not narrative rewrites).
-
-6. **Static cross-references allowed** — link to a fixed section anchor, e.g. `[§6.1](#61-api-및-인터페이스)` or `[ref:A-3]`. Forbidden: temporal phrases only (see rule 1).
-
-7. **Ch.5 `#### 한눈에`** — after each Ch.5 `###` subsection content, add exactly 3 PM-readable bullets (no field-level schema).
-
-8. **Ch.5–6 Tier-2** — use `[ref:A-n]`; do not use inline `> **사실:**` blocks in Ch.5–6.
-
-9. **Mixed audience pattern** — within each subsection:
-   - First line: plain-language summary (PM-readable)
-   - Following lines: technical detail (developer/audit)
+- **Opening paragraph** (no subsection title): 3–5 sentences — scope, outcome, rollout hint. Must lead into Ch.2.
+- **Keep for navigation:** Goals / Non-Goals, reader path table, TOC.
+- **Do not use** `### TL;DR`.
 
 ## Design Alternatives — When Multiple Options Exist
 
-Do **not** silently pick one option when the fork is real. Use the decision tree below.
+Use the decision tree in Phase 3 outline (unchanged):
 
-### Decision tree (apply in Phase 3 outline)
+| Situation | Ch.4 format | Ch.5–6 | Ch.7 |
+|-----------|-------------|--------|------|
+| Single clear winner | `> **결정:**` | Follows decision | Standard |
+| Real fork | `> **갈림:**` + `권장(미확정)` | Follows **권장** | 열린 질문 |
+| Tier-1 high impact | Ask user first | After confirm | Standard |
 
-| Situation | Ch.4 format | Ch.5–6 To-Be | Ch.7 | User ask? |
-|-----------|-------------|--------------|------|-----------|
-| **Single clear winner** | `> **결정:**` | Follows that decision | Risks / rollout | No |
-| **Real fork** | `> **갈림:**` + … + `> **상태:** 권장(미확정)` | Follows **권장** in 상위·상세 | **열린 질문** with “최종 선택 필요” | No |
-| **Tier-1 high impact fork** | After user answer: `> **결정:**` + `> **상태:** 확정` | Uses confirmed choice | Standard | **Yes — before Ch.4** |
-
-**Single clear winner signals:** existing code pattern to extend; PRD mandates one approach; repo already depends on one stack; one option fails a hard constraint.
-
-**Real fork signals:** PRD silent or ambiguous; multiple options fit code/ops constraints; trade-offs are balanced.
-
-**Tier-1 high impact (ask user):** choice affects security boundary, data durability, public API contract, or migration cost beyond one sprint. Present **2–3 options + agent recommendation** in the question; do not draft Ch.4–7 for that topic until answered.
-
-### Ch.4 source block shapes
-
-**Confirmed single choice** — see [citation-tiers.md](citation-tiers.md) `> **결정:**`.
-
-**Multiple options (documented fork):**
-
-```markdown
-> **갈림:** Primary datastore
-> **대안:** (A) PostgreSQL — ACID, relational model (B) MongoDB — flexible schema
-> **권장:** (A) PostgreSQL — PRD requires cross-entity transactions
-> **근거:** [source:postgresql-transactions](https://www.postgresql.org/docs/current/tutorial-transactions.html)
-> **코드:** (Greenfield — 코드 없음)
-> **상태:** 권장(미확정)
-```
-
-**After user confirms Tier-1 fork:**
-
-```markdown
-> **결정:** PostgreSQL을 primary datastore로 채택한다.
-> **근거:** [source:postgresql-docs](https://www.postgresql.org/docs/current/)
-> **코드:** (Greenfield — 코드 없음)
-> **상태:** 확정
-```
-
-### Ch.5–7 rules for forks
-
-- **상위설계·상세설계** always follow **권장** or **확정** choice from Ch.4 — never an unnamed option.
-- If any Ch.4 block has `> **상태:** 권장(미확정)`, Ch.7 **열린 질문** must include matching “최종 선택 필요” item.
-- Do not present parallel To-Be architectures; one narrative path in Ch.5–6.
-- Introduce component **names** in Ch.5 before API/schema detail in Ch.6.
+Ch.5–6 follow **one** narrative path (권장 or 확정). Component **names** first appear in Ch.5 prose; Ch.6 reuses them.
 
 ## Outline Self-Check (before drafting)
 
-Before writing prose, verify the outline lists:
-
-- [ ] Every concept in introduction order (no concept used before listed)
-- [ ] Ch.5 component list: ≥2 names (see outline-template.md)
-- [ ] Ch.6 API/event list: ≥1 per user-facing action
-- [ ] Ch.6 entity list: ≥1 per persisted object with field names
-- [ ] Flow steps: ≥5 (same names in Ch.5 ### 데이터 흐름 and Ch.6 ### 핵심 처리 흐름)
-- [ ] Error branches: ≥2 mapped to Ch.6
-- [ ] Each Tier-1 topic tagged: `single` | `multi-recommend` | `needs-user-confirm`
-- [ ] User confirmation obtained for all `needs-user-confirm` items before Ch.4 draft
-- [ ] Tier-1 decisions all scheduled for Ch.4
-- [ ] PRD↔code gaps (brownfield) or PRD→decisions (greenfield) enumerated
-- [ ] No chapter depends on information from a later chapter
+- [ ] Concept introduction order (outline rows)
+- [ ] Ch.5 ≥2 component names; Ch.6 APIs/entities/flows mapped
+- [ ] Bridge plan: last line of Ch.2→3, 3→4, 4→5 sketched
+- [ ] Tier-1 in Ch.4; user confirm for `needs-user-confirm`
+- [ ] No chapter depends on a later chapter
 
 ## Common Violations
 
 | Bad | Good |
 |-----|------|
-| "As described in section 3, the auth module…" (in Ch.5) | Restate the needed fact in one sentence, then continue |
-| "We will explain the database schema later" | Present schema when first needed, in order |
-| PRD requirement in Ch.5 with no prior mention | First mention in Ch.4 as PRD requirement |
-| Fictional `UserService` in greenfield Ch.3 | "No domain services exist; only empty `src/`" |
+| `요약: API layer …` | “The cancel request enters through the API layer, which …” |
+| `#### 한눈에` bullets repeating the section | One clear prose paragraph; tables hold spec |
+| Ch.5 names a service never mentioned in Ch.4 | Ch.4 states the gap/decision that introduces the service |
+| Telegraphic Ch.2 (“PRD requires X.”) | Full paragraph: who is affected, where in product, why it matters |

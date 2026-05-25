@@ -84,15 +84,31 @@ APPENDIX_A_HEADER = re.compile(r"^##\s+부록\s+A", re.M)
 APPENDIX_B_HEADER = re.compile(r"^##\s+부록\s+B", re.M)
 MERMAID_FENCE = re.compile(r"```mermaid[\s\S]*?```", re.M)
 HANNUINE_HEADER = re.compile(r"^####\s+한눈에", re.M)
-CH1_TLDR = re.compile(r"^###\s+TL;DR", re.M)
 CH1_GOALS = re.compile(r"^###\s+Goals\s*/\s*Non-Goals", re.M)
 CH1_READER = re.compile(r"^###\s+이\s+문서\s+읽는\s+법", re.M)
 CH1_TOC = re.compile(r"^###\s+목차", re.M)
 CH4_SUMMARY = re.compile(r"^###\s+결정\s+요약", re.M)
-CH6_SPEC_INDEX = re.compile(r"^###\s+스펙\s+인덱스", re.M)
 SASIL_BLOCK = re.compile(r"^\s*>\s*\*\*사실:\*\*", re.M)
 APPENDIX_A_ID = re.compile(r"^\|\s*(A-\d+)\s*\|", re.M)
-MIN_HANNUINE_BULLETS = 3
+
+MIN_CH234_SENTENCES = 8
+MIN_CH1_OPENING_SENTENCES = 3
+MIN_DOC_SENTENCES = 40
+MIN_CH5_LEAD_SENTENCES = 2
+MIN_CH6_LEAD_SENTENCES = 1
+
+FORBIDDEN_META_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    ("meta-yoyak", re.compile(r"^요약\s*:", re.M)),
+    ("meta-hannuine", re.compile(r"^####\s+한눈에", re.M)),
+    ("meta-tldr", re.compile(r"^###\s+TL;DR", re.M)),
+    ("meta-6h-en", re.compile(r"^(Who|What|When|Where|Why|How)\s*:", re.M | re.I)),
+    ("meta-6h-ko", re.compile(r"^(누가|무엇|언제|어디|왜|어떻게)\s*:", re.M)),
+]
+
+BRIDGE_KEYWORDS = re.compile(
+    r"때문|따라|현재|PRD|미구현|갭|요구|because|therefore|requires?",
+    re.I,
+)
 
 # --- Strict depth profile (default) ---
 SUBSECTION_MIN_CHARS = 120
@@ -218,6 +234,73 @@ def _subsection_content(chapter: str, header_pattern: str) -> tuple[int, str]:
     return line_num, chapter[start:end].strip()
 
 
+def _strip_structural_content(text: str) -> str:
+    """Remove tables, blockquotes, fences, headings for prose metrics."""
+    text = re.sub(r"```[\s\S]*?```", "", text)
+    lines: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            lines.append("")
+            continue
+        if stripped.startswith("|"):
+            continue
+        if stripped.startswith(">"):
+            continue
+        if re.match(r"^#{1,6}\s", stripped):
+            continue
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def _split_sentences(text: str) -> list[str]:
+    prose = _strip_structural_content(text).strip()
+    if not prose:
+        return []
+    parts = re.split(r"(?<=[.!?。])\s+|\n\n+", prose)
+    return [p.strip() for p in parts if len(p.strip()) >= 8]
+
+
+def _count_sentences(text: str) -> int:
+    return len(_split_sentences(text))
+
+
+def _prose_char_count(text: str) -> int:
+    return len(_strip_structural_content(text).strip())
+
+
+def _significant_tokens(sentence: str) -> set[str]:
+    return {w.lower() for w in re.findall(r"[\w가-힣]{3,}", sentence)}
+
+
+def _chapter_bridge_ok(prev_chapter: str, next_chapter: str) -> bool:
+    prev_sents = _split_sentences(prev_chapter)
+    next_sents = _split_sentences(next_chapter)
+    if not prev_sents or not next_sents:
+        return False
+    last, first = prev_sents[-1], next_sents[0]
+    if _significant_tokens(last) & _significant_tokens(first):
+        return True
+    return bool(BRIDGE_KEYWORDS.search(first))
+
+
+def _lead_prose_lines(subsection: str) -> str:
+    """Text before first table, fence, numbered step, or component bullet."""
+    collected: list[str] = []
+    for line in subsection.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("|") or stripped.startswith("```"):
+            break
+        if re.match(r"^\d+\.", stripped):
+            break
+        if COMPONENT_BULLET.match(stripped):
+            break
+        if stripped.startswith("#### ") or stripped.startswith("### "):
+            continue
+        collected.append(line)
+    return "\n".join(collected)
+
+
 def _count_table_data_rows(text: str) -> int:
     table_lines = [line for line in text.splitlines() if line.strip().startswith("|")]
     if len(table_lines) < 2:
@@ -270,20 +353,13 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
             line_num, content = _subsection_content(chapter, pattern)
             if not content:
                 continue
-            if not YOAK_PATTERN.search(content):
-                errors.append(
-                    ValidationError(
-                        line_num,
-                        "subsection-no-yoyak",
-                        "Subsection must open with 요약: (see design-sections.md depth rubric)",
-                    )
-                )
-            if len(content) < SUBSECTION_MIN_CHARS:
+            prose_len = _prose_char_count(content)
+            if prose_len < SUBSECTION_MIN_CHARS:
                 errors.append(
                     ValidationError(
                         line_num,
                         "subsection-thin",
-                        f"Subsection content too thin ({len(content)} chars, min {SUBSECTION_MIN_CHARS})",
+                        f"Subsection prose too thin ({prose_len} chars, min {SUBSECTION_MIN_CHARS})",
                     )
                 )
 
@@ -541,89 +617,8 @@ def _appendix_slice(body: str, header_pattern: re.Pattern[str]) -> str:
     return body[begin:]
 
 
-def _count_hannuine_bullets(subsection: str) -> int:
-    match = HANNUINE_HEADER.search(subsection)
-    if not match:
-        return 0
-    after = subsection[match.end() :]
-    count = 0
-    for line in after.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("#### ") or stripped.startswith("### ") or stripped.startswith("## "):
-            break
-        if re.match(r"^[-*]\s+", stripped):
-            count += 1
-    return count
-
-
-def check_readability(body: str) -> list[ValidationError]:
-    """Readability profile: navigation, diagrams, appendix citations."""
+def _appendix_citation_checks(body: str, ch4: str, ch5: str, ch6: str) -> list[ValidationError]:
     errors: list[ValidationError] = []
-
-    ch1 = _chapter_slice(body, r"^##\s+1\.\s+서문", r"^##\s+2\.\s+")
-    if ch1:
-        for pattern, code, label in (
-            (CH1_TLDR, "ch1-tldr-missing", "### TL;DR"),
-            (CH1_GOALS, "ch1-goals-missing", "### Goals / Non-Goals"),
-            (CH1_READER, "ch1-reader-missing", "### 이 문서 읽는 법"),
-            (CH1_TOC, "ch1-toc-missing", "### 목차"),
-        ):
-            if not pattern.search(ch1):
-                errors.append(ValidationError(0, code, f"Ch.1 missing {label}"))
-
-    ch4 = _chapter_slice(body, r"^##\s+4\.\s+", r"^##\s+5\.\s+")
-    if ch4:
-        if not CH4_SUMMARY.search(ch4):
-            errors.append(ValidationError(0, "ch4-summary-missing", "Ch.4 missing ### 결정 요약"))
-        else:
-            _, summary_sec = _subsection_content(ch4, r"###\s+결정\s+요약")
-            if _count_table_data_rows(summary_sec) < 1:
-                errors.append(
-                    ValidationError(0, "ch4-summary-empty", "### 결정 요약 needs ≥1 data row")
-                )
-
-    ch5 = _chapter_slice(body, r"^##\s+5\.\s+상위설계", r"^##\s+6\.\s+")
-    if ch5:
-        _, arch_sec = _subsection_content(ch5, r"###\s+아키텍처\s+개요")
-        if arch_sec and not MERMAID_FENCE.search(arch_sec):
-            errors.append(
-                ValidationError(0, "ch5-mermaid-missing", "Ch.5 ### 아키텍처 개요 needs ```mermaid diagram")
-            )
-        for pattern, label in (
-            (r"###\s+아키텍처\s+개요", "아키텍처 개요"),
-            (r"###\s+구성요소\s+및\s+책임", "구성요소 및 책임"),
-            (r"###\s+데이터\s+흐름", "데이터 흐름"),
-        ):
-            line_num, content = _subsection_content(ch5, pattern)
-            if not content:
-                continue
-            bullets = _count_hannuine_bullets(content)
-            if bullets < MIN_HANNUINE_BULLETS:
-                errors.append(
-                    ValidationError(
-                        line_num,
-                        "ch5-hannuine-missing",
-                        f"Ch.5 ### {label} needs #### 한눈에 with ≥{MIN_HANNUINE_BULLETS} bullets (found {bullets})",
-                    )
-                )
-
-    ch6 = _chapter_slice(body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
-    if ch6:
-        if not CH6_SPEC_INDEX.search(ch6):
-            errors.append(ValidationError(0, "ch6-spec-index-missing", "Ch.6 missing ### 스펙 인덱스"))
-        else:
-            spec_pos = CH6_SPEC_INDEX.search(ch6)
-            api_pos = re.search(r"^###\s+API\s+및\s+인터페이스", ch6, re.M)
-            if spec_pos and api_pos and spec_pos.start() > api_pos.start():
-                errors.append(
-                    ValidationError(0, "ch6-spec-index-order", "### 스펙 인덱스 must appear before ### API 및 인터페이스")
-                )
-            _, spec_sec = _subsection_content(ch6, r"###\s+스펙\s+인덱스")
-            if _count_table_data_rows(spec_sec) < 1:
-                errors.append(
-                    ValidationError(0, "ch6-spec-index-empty", "### 스펙 인덱스 needs ≥1 data row")
-                )
-
     for label, chunk in (("5", ch5), ("6", ch6)):
         if chunk and SASIL_BLOCK.search(chunk):
             errors.append(
@@ -655,11 +650,145 @@ def check_readability(body: str) -> list[ValidationError]:
         errors.append(
             ValidationError(0, "appendix-b-missing", "Ch.4 has blockquotes but ## 부록 B is missing")
         )
-
     return errors
 
 
-def validate(path: Path, *, strict: bool = True, readability: bool = False) -> list[ValidationError]:
+def check_narrative(body: str) -> list[ValidationError]:
+    """Narrative profile: story prose, bridges, anti-labels, appendices."""
+    errors: list[ValidationError] = []
+
+    ch1 = _chapter_slice(body, r"^##\s+1\.\s+서문", r"^##\s+2\.\s+")
+    ch2 = _chapter_slice(body, r"^##\s+2\.\s+", r"^##\s+3\.\s+")
+    ch3 = _chapter_slice(body, r"^##\s+3\.\s+", r"^##\s+4\.\s+")
+    ch4 = _chapter_slice(body, r"^##\s+4\.\s+", r"^##\s+5\.\s+")
+    ch5 = _chapter_slice(body, r"^##\s+5\.\s+상위설계", r"^##\s+6\.\s+")
+    ch6 = _chapter_slice(body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
+    ch234567 = _body_before_appendices(body)
+    bridge_body = ch234567
+    for code, pattern in FORBIDDEN_META_PATTERNS:
+        if pattern.search(bridge_body):
+            errors.append(
+                ValidationError(0, code, f"Forbidden meta-label in Ch.2–7: {code}")
+            )
+
+    if ch1:
+        first_sub = re.search(r"^###\s+", ch1, re.M)
+        opening = ch1[: first_sub.start()] if first_sub else ch1
+        opening = re.sub(r"^#\s+.*\n", "", opening, count=1, flags=re.M)
+        if _count_sentences(opening) < MIN_CH1_OPENING_SENTENCES:
+            errors.append(
+                ValidationError(
+                    0,
+                    "ch1-opening-thin",
+                    f"Ch.1 needs ≥{MIN_CH1_OPENING_SENTENCES} opening sentences before first ### (no TL;DR section)",
+                )
+            )
+        for pattern, code, label in (
+            (CH1_GOALS, "ch1-goals-missing", "### Goals / Non-Goals"),
+            (CH1_READER, "ch1-reader-missing", "### 이 문서 읽는 법"),
+            (CH1_TOC, "ch1-toc-missing", "### 목차"),
+        ):
+            if not pattern.search(ch1):
+                errors.append(ValidationError(0, code, f"Ch.1 missing {label}"))
+
+    for num, chapter, code in (
+        (2, ch2, "ch2-min-sentences"),
+        (3, ch3, "ch3-min-sentences"),
+        (4, ch4, "ch4-min-sentences"),
+    ):
+        count = _count_sentences(chapter)
+        if chapter and count < MIN_CH234_SENTENCES:
+            errors.append(
+                ValidationError(
+                    0,
+                    code,
+                    f"Ch.{num} needs ≥{MIN_CH234_SENTENCES} prose sentences (found {count})",
+                )
+            )
+
+    if ch2 and ch3 and not _chapter_bridge_ok(ch2, ch3):
+        errors.append(ValidationError(0, "ch-bridge-2-3", "Weak narrative bridge between Ch.2 and Ch.3"))
+    if ch3 and ch4 and not _chapter_bridge_ok(ch3, ch4):
+        errors.append(ValidationError(0, "ch-bridge-3-4", "Weak narrative bridge between Ch.3 and Ch.4"))
+    if ch4 and ch5 and not _chapter_bridge_ok(ch4, ch5):
+        errors.append(ValidationError(0, "ch-bridge-4-5", "Weak narrative bridge between Ch.4 and Ch.5"))
+
+    if ch4:
+        if not CH4_SUMMARY.search(ch4):
+            errors.append(ValidationError(0, "ch4-summary-missing", "Ch.4 missing ### 결정 요약"))
+        else:
+            _, summary_sec = _subsection_content(ch4, r"###\s+결정\s+요약")
+            if _count_table_data_rows(summary_sec) < 1:
+                errors.append(
+                    ValidationError(0, "ch4-summary-empty", "### 결정 요약 needs ≥1 data row")
+                )
+
+    if ch5:
+        _, arch_sec = _subsection_content(ch5, r"###\s+아키텍처\s+개요")
+        if arch_sec and not MERMAID_FENCE.search(arch_sec):
+            errors.append(
+                ValidationError(0, "ch5-mermaid-missing", "Ch.5 ### 아키텍처 개요 needs ```mermaid diagram")
+            )
+        for pattern, label, min_lead in (
+            (r"###\s+아키텍처\s+개요", "아키텍처 개요", MIN_CH5_LEAD_SENTENCES),
+            (r"###\s+구성요소\s+및\s+책임", "구성요소 및 책임", MIN_CH5_LEAD_SENTENCES),
+            (r"###\s+데이터\s+흐름", "데이터 흐름", MIN_CH5_LEAD_SENTENCES),
+        ):
+            line_num, content = _subsection_content(ch5, pattern)
+            if not content:
+                continue
+            lead_count = _count_sentences(_lead_prose_lines(content))
+            if lead_count < min_lead:
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "ch5-lead-prose-thin",
+                        f"Ch.5 ### {label} needs ≥{min_lead} lead sentences before structure (found {lead_count})",
+                    )
+                )
+
+    if ch6:
+        for pattern, label in (
+            (r"###\s+API\s+및\s+인터페이스", "API 및 인터페이스"),
+            (r"###\s+데이터\s+모델", "데이터 모델"),
+            (r"###\s+핵심\s+처리\s+흐름", "핵심 처리 흐름"),
+        ):
+            line_num, content = _subsection_content(ch6, pattern)
+            if not content:
+                continue
+            lead_count = _count_sentences(_lead_prose_lines(content))
+            if lead_count < MIN_CH6_LEAD_SENTENCES:
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "ch6-lead-prose-thin",
+                        f"Ch.6 ### {label} needs ≥{MIN_CH6_LEAD_SENTENCES} lead sentence before tables (found {lead_count})",
+                    )
+                )
+
+    doc_sentences = _count_sentences(_body_before_appendices(body))
+    if doc_sentences < MIN_DOC_SENTENCES:
+        errors.append(
+            ValidationError(
+                0,
+                "doc-min-sentences",
+                f"Document needs ≥{MIN_DOC_SENTENCES} prose sentences (found {doc_sentences})",
+            )
+        )
+
+    errors.extend(_appendix_citation_checks(body, ch4, ch5, ch6))
+    return errors
+
+
+def check_readability(body: str) -> list[ValidationError]:
+    """Deprecated alias — use check_narrative."""
+    return check_narrative(body)
+
+
+def validate(path: Path, *, strict: bool = True, narrative: bool = False, readability: bool = False) -> list[ValidationError]:
+    if readability and not narrative:
+        print("Warning: --readability is deprecated; use --narrative", file=sys.stderr)
+        narrative = True
     text = path.read_text(encoding="utf-8")
     meta, body, errors = parse_frontmatter(text)
     mode = meta.get("mode", "")
@@ -673,8 +802,8 @@ def validate(path: Path, *, strict: bool = True, readability: bool = False) -> l
     errors.extend(check_pending_open_questions(body))
     if strict:
         errors.extend(check_design_depth(body, mode))
-    if readability:
-        errors.extend(check_readability(body))
+    if narrative:
+        errors.extend(check_narrative(body))
 
     return errors
 
@@ -682,13 +811,13 @@ def validate(path: Path, *, strict: bool = True, readability: bool = False) -> l
 def main() -> int:
     args = sys.argv[1:]
     strict = True
-    readability = False
+    narrative = False
     paths: list[str] = []
     for arg in args:
         if arg == "--lenient":
             strict = False
-        elif arg == "--readability":
-            readability = True
+        elif arg in ("--readability", "--narrative"):
+            narrative = True
         elif arg.startswith("--"):
             print(f"Unknown flag: {arg}", file=sys.stderr)
             return 2
@@ -696,7 +825,7 @@ def main() -> int:
             paths.append(arg)
     if len(paths) != 1:
         print(
-            f"Usage: {sys.argv[0]} [--lenient] [--readability] <path-to-tdd.md>",
+            f"Usage: {sys.argv[0]} [--lenient] [--narrative] <path-to-tdd.md>",
             file=sys.stderr,
         )
         return 2
@@ -706,7 +835,8 @@ def main() -> int:
         print(f"File not found: {path}", file=sys.stderr)
         return 2
 
-    errors = validate(path, strict=strict, readability=readability)
+    readability = "--readability" in args
+    errors = validate(path, strict=strict, narrative=narrative, readability=readability)
     if not errors:
         print(f"OK: {path}")
         return 0

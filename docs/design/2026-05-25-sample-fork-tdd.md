@@ -12,11 +12,7 @@ review_rounds: 0
 
 ## 1. 서문
 
-Doc for validator and skill regression test. PM and dev readers validate fork + strict depth + readability profiles.
-
-### TL;DR
-
-Greenfield items CRUD API needs a primary datastore with cross-entity transactions. PostgreSQL(권장) vs MongoDB 갈림이 있으며 PostgreSQL을 권장한다. ApiServer + ItemRepository + PostgreSQL 2-tier로 v1을 구현한다.
+이 문서는 greenfield items CRUD API의 기술 설계를 PM, 백엔드 개발자, 감사 담당자가 공유하기 위해 작성한다. PRD는 cross-entity 트랜잭션이 가능한 primary datastore와 REST CRUD를 요구한다. PostgreSQL과 MongoDB 사이의 datastore 갈림이 남아 있으며, 본문은 PostgreSQL 권장 경로를 기준으로 서술한다. 최종 datastore 선택은 Ch.7 열린 질문에서 확정한다. v1은 internal network 전용이며 public auth는 범위 밖이다.
 
 ### Goals / Non-Goals
 
@@ -33,9 +29,9 @@ Greenfield items CRUD API needs a primary datastore with cross-entity transactio
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | TL;DR → [§5](#5-상위설계) diagram | ~2분 |
-| Dev | [§4](#4-설계-결정) → [§6](#6-상세설계) 스펙 인덱스 | ~5분 |
-| 감사 | [§4](#4-설계-결정) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | ~3분 |
+| PM | 서문 opening → [§5](#5-상위설계) mermaid | ~3분 |
+| Dev | [§4](#4-설계-결정) 결정 요약 → [§6](#6-상세설계) 스펙 표 | ~5분 |
+| 감사 | [§4](#4-설계-결정) 갈림 block → [부록 A](#부록-a-출처코드-위치) | ~3분 |
 
 ### 목차
 
@@ -51,19 +47,15 @@ Greenfield items CRUD API needs a primary datastore with cross-entity transactio
 
 ## 2. 배경과 문제
 
-요약: Greenfield API needs persistent storage for items CRUD.
-
-PRD requires transactional consistency across item writes. Stack is Node 20 + TypeScript.
+PRD는 items 엔티티에 대한 REST CRUD API와 영속 저장소를 요구한다. 모든 write는 cross-entity 트랜잭션 경계 안에서 일관되게 커밋되어야 한다. 동일 sku 중복 생성과 부분 실패 rollback은 운영에서 반드시 막아야 하는 실패 모드이다. 대상 스택은 Node 20과 TypeScript이며, 배포 환경은 Kubernetes liveness probe를 전제로 한다. v1 범위는 internal network에서 Bearer 인증 없이 호출 가능한 API로 한정한다. message queue나 event bus는 이번 릴리스 Non-Goal이다. health endpoint는 프로브 실패 시 트래픽 차단을 위해 필수이다. 이 요구는 relational ACID 또는 동등한 트랜잭션 보장을 갖는 datastore 선택으로 이어진다.
 
 ## 3. 시작점
 
-요약: 도메인 코드는 없고 Node 20 + TypeScript 보일러플레이트만 있다.
-
-`package.json`에 express와 typescript가 선언되어 있다. `src/` 디렉터리는 비어 있다. 런타임 의존성은 express 4.x이다 [ref:A-1].
+PRD가 요구하는 items CRUD와 트랜잭션 일관성을 구현할 도메인 코드는 아직 존재하지 않는다. 저장소에는 Node 20과 TypeScript 보일러플레이트만 있으며, `package.json`에 express 4.x와 typescript가 선언되어 있다. `src/` 디렉터리는 비어 있어 HTTP handler, repository, schema migration 코드가 모두 미구현 상태이다. 런타임 의존성은 express 4.x 하나이며 DB driver나 ORM은 아직 추가되지 않았다 [ref:A-1]. CI는 lint와 typecheck만 실행하며 integration test harness도 없다. express boilerplate만으로는 PRD items CRUD를 충족할 수 없다. 따라서 datastore, API contract, migration 순서를 Ch.4에서 먼저 확정해야 구현 착수가 가능하다. greenfield 전제 하에서 Ch.5·6는 신규 **ApiServer**, **ItemRepository**, **PostgreSQL** 조합을 가정한다.
 
 ## 4. 설계 결정
 
-요약: Primary datastore는 PostgreSQL(권장) vs MongoDB 갈림이며, 트랜잭션 요구로 PostgreSQL을 권장한다.
+미구현 DB layer와 PRD cross-entity transaction 요구 때문에 primary datastore 선택이 첫 번째 설계 갈림이다. PRD cross-entity transaction 요구는 단일 DB transaction으로 item write를 묶을 수 있는 relational store에 유리하다. MongoDB는 스키마 유연성은 높지만 multi-document ACID는 운영 복잡도와 버전 제약이 따른다. PostgreSQL은 ACID transaction과 UNIQUE constraint를 SQL 표준으로 제공한다. v1은 단일 **ApiServer** 프로세스와 단일 PostgreSQL instance로 수평 복잡도를 낮춘다. 인증·메시징은 Non-Goal이므로 datastore 결정이 아키텍처 형태를 좌우한다. 본 문서는 PostgreSQL 권장 경로로 Ch.5·6를 전개하되, 상태는 권장(미확정)으로 둔다. 확정 전까지 Ch.7 열린 질문에 MongoDB 대안 검토 항목을 유지한다.
 
 ### 결정 요약
 
@@ -80,11 +72,11 @@ PRD requires transactional consistency across item writes. Stack is Node 20 + Ty
 
 ## 5. 상위설계
 
+PostgreSQL 권장(미확정) 결정에 따라 v1은 단일 **ApiServer** 프로세스와 **PostgreSQL** 2-tier로 설계한다. HTTP 경계와 persistence 경계를 분리해 이후 datastore 확정 시 repository layer만 교체 가능하게 한다.
+
 ### 아키텍처 개요
 
-요약: PostgreSQL 기준 단일 **ApiServer** 프로세스 + **PostgreSQL** 2-tier.
-
-HTTP clients call **ApiServer** (API layer). **ApiServer** persists via **PostgreSQL** (data layer). No message queue in v1 [ref:A-2].
+HTTP clients는 **ApiServer** 한 프로세스에 REST 요청을 보낸다. **ApiServer**는 validation과 routing 후 **ItemRepository**를 통해 **PostgreSQL**에 SQL을 실행한다. v1에는 message queue나 read replica가 없으며, 모든 write는 primary DB transaction 안에서 처리한다 [ref:A-2].
 
 ```mermaid
 flowchart LR
@@ -93,27 +85,17 @@ flowchart LR
   ItemRepository --> PostgreSQL[(PostgreSQL)]
 ```
 
-#### 한눈에
-- 단일 ApiServer 프로세스가 HTTP를 처리한다
-- ItemRepository가 SQL access를 캡슐화한다
-- PostgreSQL이 ACID persistence를 제공한다
-
 ### 구성요소 및 책임
 
-요약: ApiServer·ItemRepository·PostgreSQL 세 구성요소가 HTTP와 persistence를 담당한다.
+세 구성요소가 HTTP ingress부터 ACID persistence까지 책임을 나눈다. **ApiServer**는 Express routing과 payload validation을 담당한다. **ItemRepository**는 items 테이블 CRUD SQL을 캡슐화한다. **PostgreSQL**은 relational persistence와 transaction boundary를 제공한다 [ref:A-3].
 
 - **ApiServer** (신규): Express HTTP, routing, validation, ItemRepository 호출
 - **ItemRepository** (신규): SQL access layer for items table
-- **PostgreSQL** (신규): relational persistence, ACID transactions [ref:A-3]
-
-#### 한눈에
-- ApiServer는 Express routing만 담당한다
-- ItemRepository는 items 테이블 CRUD를 캡슐화한다
-- PostgreSQL은 권장 datastore 가정이다
+- **PostgreSQL** (신규): relational persistence, ACID transactions
 
 ### 데이터 흐름
 
-요약: Client CRUD는 ApiServer → ItemRepository → PostgreSQL 순으로 처리한다.
+Client CRUD 요청은 **ApiServer** → **ItemRepository** → **PostgreSQL** 순으로 동기 처리된다. validation 실패는 DB 호출 전에 400으로 종료하고, sku UNIQUE violation은 409로 매핑한다. 모든 successful write path는 단일 DB transaction으로 commit된다 [ref:A-4].
 
 1. Client → **ApiServer**: HTTP request + JSON body
 2. **ApiServer**: validate payload, map to domain call
@@ -121,16 +103,9 @@ flowchart LR
 4. **ItemRepository** → **PostgreSQL**: SQL within transaction
 5. **ApiServer** → Client: JSON response + HTTP status
 
-CRUD 요청은 단일 트랜잭션으로 ItemRepository를 통해 PostgreSQL에 기록한다 [ref:A-4].
-
-#### 한눈에
-- 모든 write는 단일 DB transaction이다
-- validation 실패 시 DB 호출 전에 400을 반환한다
-- sku UNIQUE violation은 409로 매핑한다
-
 ## 6. 상세설계
 
-### 스펙 인덱스
+Ch.5에서 정의한 **ApiServer**, **ItemRepository**, **PostgreSQL** 조합을 endpoint, entity, error code 수준까지 내린다. 아래 표는 dev reader가 Ch.6 본문으로 바로 점프할 때 사용하는 인덱스이다.
 
 | Endpoint / Interface | Entity | Error codes |
 |----------------------|--------|-------------|
@@ -139,7 +114,7 @@ CRUD 요청은 단일 트랜잭션으로 ItemRepository를 통해 PostgreSQL에 
 
 ### API 및 인터페이스
 
-요약: items REST API는 Bearer 인증 없이 v1 internal; health endpoint for k8s.
+items REST API는 v1 internal network 전용이며 Bearer 인증을 요구하지 않는다. **ApiServer**는 path-based Express routing으로 handler를 매핑한다. health endpoint는 k8s liveness probe용으로 auth 없이 200을 반환한다 [ref:A-5].
 
 #### `GET /health`
 
@@ -159,11 +134,9 @@ CRUD 요청은 단일 트랜잭션으로 ItemRepository를 통해 PostgreSQL에 
 | VALIDATION_ERROR | 400 | invalid body | fix payload | no |
 | DUPLICATE_SKU | 409 | sku exists | use new sku | no |
 
-Express routing은 path-based handler 매핑을 사용한다 [ref:A-5].
-
 ### 데이터 모델
 
-요약: items 테이블은 uuid PK와 unique sku를 가진다.
+**PostgreSQL** relational model 기준 items 테이블은 uuid primary key와 sku UNIQUE constraint를 가진다. created_at은 insert 시점 timestamptz default now()로 기록한다 [ref:A-6].
 
 #### `items`
 
@@ -174,11 +147,9 @@ Express routing은 path-based handler 매핑을 사용한다 [ref:A-5].
 | sku | varchar(64) | no | UNIQUE | |
 | created_at | timestamptz | no | default now() | |
 
-items 테이블은 PostgreSQL relational model을 따른다 [ref:A-6].
-
 ### 핵심 처리 흐름
 
-요약: **ApiServer** create item flow with validation and DB constraint errors.
+**ApiServer** create item flow는 validation → **ItemRepository**.insert → commit 순서를 따른다. DB constraint error는 HTTP semantics에 맞게 매핑하고 transaction rollback으로 partial write를 방지한다 [ref:A-7].
 
 **Happy path:** **ApiServer** validates POST body → **ItemRepository**.insert → commit → 201.
 
@@ -186,13 +157,11 @@ items 테이블은 PostgreSQL relational model을 따른다 [ref:A-6].
 - Validation failure → 400 VALIDATION_ERROR before **ItemRepository** call
 - **PostgreSQL** unique violation on sku → 409 DUPLICATE_SKU; transaction rollback
 
-UNIQUE constraint violation은 SQLSTATE 23505로 식별한다 [ref:A-7].
-
 ## 7. 마무리
 
 ### 롤아웃·일정
 
-TBD after DB choice confirmed. Deploy ApiServer after PostgreSQL schema migration.
+Primary datastore 최종 확정 후 migration 일정과 **ApiServer** deploy 순서를 잡는다. PostgreSQL schema migration 적용 뒤 **ApiServer**를 internal network에 배포한다. 확정 전까지 staging DB는 권장 경로인 PostgreSQL로 provision한다.
 
 ### 리스크
 

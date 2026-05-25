@@ -24,130 +24,244 @@ review_rounds: 0
 # Test — Technical Design Document
 """
 
-MINIMAL_READABLE_BODY = """
+MINIMAL_NARRATIVE_BODY = """
 ## 1. 서문
-### TL;DR
-One. Two. Three.
+
+This document describes the order cancel feature for PM, developers, and audit readers.
+The PRD requires refund orchestration when a paid order is cancelled on the B2C web API.
+We will roll out behind a feature flag after staging validation completes successfully.
+
 ### Goals / Non-Goals
-**Goals:** a b c
-**Non-Goals:** x y
+
+**Goals:**
+- Provide cancel API with refund
+- Restore inventory on cancel
+- Support idempotent retries
+
+**Non-Goals:**
+- Partial refund policy
+- Bulk admin cancel
+
 ### 이 문서 읽는 법
-| PM | x | 2 |
-| Dev | y | 5 |
-| Audit | z | 3 |
+
+| 독자 | 먼저 볼 곳 | 목표 |
+|------|-----------|------|
+| PM | Ch.1 opening → Ch.5 diagram | ~3분 |
+| Dev | Ch.4 → Ch.6 tables | ~5분 |
+| Audit | Ch.4 결정 요약 → Appendix A | ~3분 |
+
 ### 목차
-1. a
+
+1. [서문](#1-서문)
+2. [배경과 문제](#2-배경과-문제)
+
 ## 2. 배경과 문제
-요약: scope
+
+Customers on the B2C web shop must cancel orders before and after payment under defined rules.
+The product scope is limited to the public order API and excludes marketplace seller tools.
+Operations teams need predictable refund behavior when a paid order moves to cancelled status.
+Support volume spikes when cancel and refund paths disagree with what the PRD promises.
+Inventory must return to sellable stock when a line item is released after cancel.
+The PRD document defines cancel-flow steps and inventory restoration as mandatory outcomes.
+This feature affects checkout, order history, and customer service dashboards equally.
+Engineering will implement cancel as an orchestrated server-side workflow rather than a UI-only change.
+
 ## 3. 현재 시스템
-요약: as-is xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+The order service exposes POST /orders/{id}/cancel for authenticated shoppers today.
+Cancel currently updates the order row to cancelled without calling any payment gateway module.
+Inventory release is not triggered consistently when status changes on paid orders in production.
+The cancel handler validates JWT bearer tokens and forwards work to OrderService synchronously.
+OrderService loads the order entity, rejects duplicate cancel attempts, and persists status only.
+Payment intent identifiers exist on paid orders but no refund API integration is wired yet.
+Operations rely on manual Stripe dashboard refunds when customers complain about stuck paid cancels.
+Because the PRD now requires automated refund on paid cancel, the current system is incomplete.
+
 ## 4. 갭과 설계 전환
+
+PRD mandates refund when status is paid, yet code never invokes PaymentGateway.refund during cancel.
+The gap is therefore PRD-only refund orchestration missing from OrderService.cancel implementation.
+We will extend cancel to call Stripe refunds before inventory release for paid orders only.
+Pending orders continue to skip refund and only transition status with inventory release unchanged.
+This direction preserves existing auth boundaries and adds a new PaymentGateway adapter module.
+Staging will validate timeout handling before the feature flag enables production traffic.
+Audit readers can trace the refund decision in the summary table and Appendix B block below.
+
 ### 결정 요약
+
 | # | 주제 | 선택 | 상태 | 상세 |
 |---|------|------|------|------|
-| 1 | t | c | 확정 | x |
-> **결정:** adopt X.
-> **근거:** https://example.com/docs
-> **코드:** `src/a.ts:1`
+| 1 | Refund | PaymentGateway.refund | 확정 | block below |
+
+> **결정:** Add PaymentGateway.refund to cancel flow for paid orders.
+> **근거:** https://example.com/docs/refunds
+> **코드:** `src/orders/cancel_handler.ts:18`
+> **상태:** 확정
+
+Brownfield teams will ship the adapter behind cancel_refund_enabled after staging soak time.
+
 ## 5. 상위설계
+
 ### 아키텍처 개요
-요약: layers xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Ch.4 chose Stripe refund orchestration, so the cancel path stays a thin API over OrderService.
+Clients authenticate with JWT; OrderService coordinates PaymentGateway and InventoryService before commit.
+The diagram shows only box-level boundaries because field schemas live in the detailed design chapter.
+
 ```mermaid
 flowchart LR
-  A --> B
+  Client --> CancelHandler
+  CancelHandler --> OrderService
+  OrderService --> PaymentGateway
+  OrderService --> InventoryService
 ```
-#### 한눈에
-- a
-- b
-- c
+
 ### 구성요소 및 책임
-요약: comps xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-- **Foo** (기존): does foo
-- **Bar** (신규): does bar
-#### 한눈에
-- a
-- b
-- c
+
+OrderService remains the orchestrator while CancelHandler keeps HTTP concerns isolated from PG details.
+PaymentGateway encapsulates Stripe refund calls and retry enqueue on timeout events from the PG vendor.
+InventoryService continues to own stock release semantics defined in the existing internal inventory API.
+
+- **CancelHandler** (기존): HTTP cancel endpoint and idempotency header forwarding
+- **OrderService** (기존): status transitions and paid-branch refund orchestration
+- **PaymentGateway** (신규): Stripe refund API with retry queue on timeout
+- **InventoryService** (기존): release line items after successful refund branch
+
 ### 데이터 흐름
-요약: flow xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-1. step
-2. step
-3. step
-#### 한눈에
-- a
-- b
-- c
+
+Paid cancels refund first because PRD cancel-flow orders payment reversal before stock release.
+The synchronous path returns explicit error codes when PG or inventory fails without partial commits.
+Each numbered step below reuses the component names introduced in the responsibility subsection above.
+
+1. Client calls CancelHandler with JWT and optional Idempotency-Key
+2. CancelHandler invokes OrderService.cancel for the order id
+3. OrderService calls PaymentGateway.refund when status is paid
+4. OrderService calls InventoryService.release for all line items
+5. OrderService persists cancelled status and cancelled_at timestamp
+
 ## 6. 상세설계
-### 스펙 인덱스
+
+The following table maps endpoints, entities, and primary error codes for implementers.
+
 | Endpoint / Interface | Entity | Error codes |
 |----------------------|--------|-------------|
-| POST /x | orders | 404 |
+| POST /orders/{id}/cancel | orders | 404, 409, 502 |
+
 ### API 및 인터페이스
-요약: api xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+CancelHandler validates Bearer JWT, forwards to OrderService, and surfaces PG timeout as retryable 502.
+
+#### `POST /orders/{id}/cancel`
+
 | Field | Type | Required | Note |
-| a | b | yes | c |
-| d | e | yes | f |
-| g | h | yes | i |
+|-------|------|----------|------|
+| id | path UUID | yes | order id |
+| Idempotency-Key | header string | no | safe retry |
+| Authorization | header Bearer | yes | JWT access token |
+
 | Code | HTTP | When | Client action | Retry? |
-| E1 | 404 | miss | fix | no |
-| E2 | 409 | dup | show | no |
-| E3 | 502 | pg | retry | yes |
+|------|------|------|---------------|--------|
+| ORDER_NOT_FOUND | 404 | invalid id | fix request | no |
+| ALREADY_CANCELLED | 409 | duplicate | show status | no |
+| PAYMENT_TIMEOUT | 502 | PG timeout | retry same key | yes |
+
 See [ref:A-1].
+
 ### 데이터 모델
-요약: model xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Orders table stores payment_intent_id for paid rows and cancelled_at when cancel completes.
+Migration V004 adds cancelled_at without rewriting historical status values for reporting.
+
+#### `orders`
+
 | Field | Type | Nullable | Constraint | Notes |
+|-------|------|----------|------------|-------|
 | id | uuid | no | PK | |
-| status | enum | no | | |
-| at | ts | yes | | |
+| status | enum | no | pending/paid/cancelled | |
+| payment_intent_id | string | yes | Stripe reference | paid only |
+| cancelled_at | timestamptz | yes | set on cancel | migration V004 |
+
 ### 핵심 처리 흐름
-요약: proc xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-**Happy path:** Foo then Bar
+
+OrderService.cancel loads the order, rejects already cancelled rows, then runs refund and inventory branches.
+
+**Happy path:** OrderService loads order → rejects cancelled → PaymentGateway.refund if paid → InventoryService.release → persist cancelled.
+
 **Errors:**
-- timeout 502 retry
-- inventory fail 500 rollback
+- PaymentGateway timeout → enqueue retry job, return 502 PAYMENT_TIMEOUT
+- InventoryService.release failure → compensating refund attempt, return 500 INVENTORY_RELEASE_FAILED
+
 ## 7. 마무리
+
 ### 롤아웃·일정
-phase 1
+
+Staging validation for one week, then production with cancel_refund_enabled flag default off.
+
 ### 리스크
-| R | I | M |
-| a | b | c |
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| PG timeout | stuck cancel | retry queue + 502 |
+
 ### 열린 질문
-- none
+
+- Partial refund policy remains undefined in PRD.
+
 ## 부록 A. 출처·코드 위치
+
 | ID | 주장 | PRD | Code | External URL |
 |----|------|-----|------|--------------|
-| A-1 | claim | prd | `src/a.ts:1` | |
+| A-1 | Idempotent cancel | prd | `src/a.ts:1` | |
+
 ## 부록 B. Ch.4 결정 전문
-> **결정:** adopt X.
-> **근거:** https://example.com/docs
-> **코드:** `src/a.ts:1`
+
+> **결정:** Add PaymentGateway.refund to cancel flow for paid orders.
+> **근거:** https://example.com/docs/refunds
+> **코드:** `src/orders/cancel_handler.ts:18`
+> **상태:** 확정
 """
 
 
 class TestStrictSourcePolicy(unittest.TestCase):
     def test_ch5_subsection_without_sasil_block_passes_strict(self):
-        doc = FRONTMATTER + MINIMAL_READABLE_BODY
+        doc = FRONTMATTER + MINIMAL_NARRATIVE_BODY
         with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
             f.write(doc)
             path = Path(f.name)
         try:
             errors = v.validate(path, strict=True)
             codes = [e.code for e in errors]
+            self.assertNotIn("subsection-no-yoyak", codes)
             self.assertNotIn("subsection-source-missing", codes)
-            self.assertNotIn("source-block-missing", codes, [str(e) for e in errors if e.code == "source-block-missing"])
         finally:
             path.unlink()
 
 
-class TestReadabilityProfile(unittest.TestCase):
-    def test_readability_checks_pass(self):
-        doc = FRONTMATTER + MINIMAL_READABLE_BODY
+class TestNarrativeProfile(unittest.TestCase):
+    def test_narrative_checks_pass(self):
+        doc = FRONTMATTER + MINIMAL_NARRATIVE_BODY
         with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
             f.write(doc)
             path = Path(f.name)
         try:
-            errors = v.validate(path, strict=True, readability=True)
+            errors = v.validate(path, strict=True, narrative=True)
             self.assertEqual(errors, [], [str(e) for e in errors])
+        finally:
+            path.unlink()
+
+    def test_forbidden_yoyak_fails_narrative(self):
+        doc = FRONTMATTER + MINIMAL_NARRATIVE_BODY.replace(
+            "Customers on the B2C",
+            "요약: Customers on the B2C",
+            1,
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
+            f.write(doc)
+            path = Path(f.name)
+        try:
+            errors = v.validate(path, strict=False, narrative=True)
+            codes = [e.code for e in errors]
+            self.assertIn("meta-yoyak", codes)
         finally:
             path.unlink()
 

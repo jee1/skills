@@ -48,20 +48,21 @@ Checklist:
 6. Every concept defined before use; component names first in Ch.5 before Ch.6 detail.
 7. Brownfield: code-only facts first in Ch.3; PRD-only first in Ch.4.
 8. Greenfield: Ch.3 must not describe non-existent domain modules.
-9. Each chapter answers its 6하원칙 dimensions (see narrative-rules table).
-10. Mixed audience: 요약 line before technical detail in subsections.
+9. Each chapter embeds its 6하 dimensions in prose (no Who:/Why: labels).
+10. No `요약:`, `#### 한눈에`, or `### TL;DR` in Ch.2–7; Ch.4 `### 결정 요약` table only.
 11. No appendix re-explaining earlier content.
 12. Design alternatives: **결정:** / **갈림:** rules; Ch.5–6 follow one To-Be path; Ch.7 열린 질문 for 권장(미확정).
-13. Strict depth (design-sections.md): every Ch.5–6 ### opens with 요약:; Ch.5 ≥2 named components; Ch.5 flow ≥3 numbered steps.
+13. Strict depth: Ch.5–6 lead prose before tables/mermaid; Ch.5 ≥2 named components; Ch.5 flow ≥3 numbered steps.
 14. Ch.6 API subsection has field-level markdown table + error codes when HTTP; data model has ≥3 field rows.
 15. Ch.6 ### 핵심 처리 흐름 has ≥2 error/retry branches (not happy-path only).
 16. Every Ch.5 component **Name** appears in Ch.6; no field-level detail in Ch.5; no new Ch.6 component absent from Ch.5.
 17. Brownfield: each component bullet has (신규) or (기존).
-18. Ch.1 has ### TL;DR, Goals/Non-Goals, 이 문서 읽는 법, 목차.
-19. Ch.4 has ### 결정 요약 table aligned with blockquotes.
-20. Ch.5 ### 아키텍처 개요 contains ```mermaid fence; each Ch.5 ### ends with #### 한눈에 (3 bullets).
-21. Ch.6 opens with ### 스펙 인덱스; no > **사실:** in Ch.5–6; Tier-2 uses [ref:A-n].
-22. Appendix A covers all [ref:A-n]; Appendix B mirrors Ch.4 blockquotes when present.
+18. Ch.1 opening paragraph (≥3 sentences, no TL;DR section), Goals/Non-Goals, 이 문서 읽는 법, 목차.
+19. Ch.2–4 each ≥8 prose sentences; bridges Ch.2→3, 3→4, 4→5 feel causal when read in order.
+20. Ch.4 has ### 결정 요약 table aligned with blockquotes.
+21. Ch.5 ### 아키텍처 개요 contains ```mermaid`; each Ch.5 ### has ≥2 lead sentences before structure.
+22. Ch.6 each ### has ≥1 lead sentence before tables; no > **사실:** in Ch.5–6; Tier-2 uses [ref:A-n]; Appendix A/B complete.
+23. Qualitative: reads like one story front-to-back; no telegraphic fragments a new teammate could not follow.
 
 Return ONLY findings in format:
 severity | chapter:line | issue | fix

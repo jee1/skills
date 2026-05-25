@@ -300,62 +300,61 @@ Health check returns 200.
 
 ---
 
-## Readability — Good
+## Narrative — Good
 
 ```markdown
-## 1. 서문
+## 2. 배경과 문제
 
-### TL;DR
-Problem sentence. Solution sentence. Impact sentence.
-
-### Goals / Non-Goals
-**Goals:** …
-**Non-Goals:** …
-
-### 이 문서 읽는 법
-| PM | TL;DR → §5 diagram | ~2분 |
+고객은 B2C 웹몰에서 결제 전후 특정 조건에서 주문을 취소할 수 있어야 한다.
+PRD는 취소 시 재고 복구와 paid 상태 환불을 동시에 요구한다.
+범위는 공개 주문 API이며 B2B bulk cancel은 포함하지 않는다.
+…（8문장 이상，요약: 없음）
 
 ## 5. 상위설계
 
 ### 아키텍처 개요
-요약: …
+
+Ch.4에서 확정한 Stripe 환불 연동에 따라 취소 요청은 얇은 HTTP 경계 뒤 OrderService가 orchestration한다.
+JWT 인증된 클라이언트만 CancelHandler에 도달하며, paid 분기에서 PaymentGateway를 호출한다.
+
 ```mermaid
 flowchart LR
-  Client --> ApiServer
+  Client --> CancelHandler
+  CancelHandler --> OrderService
 ```
-#### 한눈에
-- bullet one
-- bullet two
-- bullet three
 
 ## 6. 상세설계
 
-### 스펙 인덱스
-| POST /items | items | 400, 409 |
+아래 표는 implementer가 먼저 볼 endpoint·entity·에러 코드 매핑이다.
+
+| POST /orders/{id}/cancel | orders | 404, 409, 502 |
 
 ### API 및 인터페이스
-요약: …
-| Field | Type | Required | Note |
-…
-Field detail in table [ref:A-1].
 
-## 부록 A. 출처·코드 위치
-| A-1 | claim | prd | code | url |
+CancelHandler는 Bearer JWT를 검증한 뒤 OrderService.cancel에 위임한다.
+
+| Field | Type | … |
 ```
 
-**Why good:** PM entry (Ch.1), diagram + 한눈에, spec index, tables first, Tier-2 in Appendix A not inline blockquotes.
+**Why good:** Ch.2–4 story prose; lead sentences before structure; no meta-labels; `[ref:A-n]` + Appendix A.
 
 ---
 
-## Readability — Bad
+## Narrative — Bad
 
 ```markdown
+## 2. 배경과 문제
+
+요약: PRD requires cancel.
+
 ## 5. 상위설계
 
 ### 아키텍처 개요
+
 요약: layers…
-> **사실:** Stripe refund API…
-> **근거:** …
+
+#### 한눈에
+- bullet
 ```
 
-**Violations:** no mermaid; no `#### 한눈에`; `> **사실:**` in Ch.5 (use `[ref:A-n]` + Appendix A); no Ch.1 TL;DR / reader paths.
+**Violations:** `요약:` / `#### 한눈에`; Ch.2 telegraphic; no chapter bridges; `<8` sentences in Ch.2–4.

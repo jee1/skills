@@ -35,7 +35,7 @@ PRD → TDD Progress:
 - [ ] Phase 3b: User confirm Tier-1 forks (if any `needs-user-confirm`)
 - [ ] Phase 4: Draft TDD (7 chapters + appendices, in order)
 - [ ] Phase 5: validate-tdd.py pass (strict)
-- [ ] Phase 5b: validate-tdd.py --readability pass
+- [ ] Phase 5b: validate-tdd.py --narrative pass
 - [ ] Phase 6: 3 subagents parallel, no Critical (≤2 rounds)
 - [ ] Phase 7: Save docs/design/YYYY-MM-DD-<feature>-tdd.md
 - [ ] STOP — do not start implementation
@@ -124,14 +124,14 @@ If user defers (“나중에”), keep `> **갈림:**` + `> **상태:** 권장(�
 3. Write **one chapter at a time** in fixed order (1 → 7)
 4. **Expand every Phase 3 outline row** into ≥1 sentence or table row in the mapped ### subsection — no orphan rows, no empty subsections
 5. Ch.4: `**결정:**` or `**갈림:**` blocks from [citation-tiers.md](citation-tiers.md)
-6. Ch.5 **상위설계**: all three ### subsections; meet [design-sections.md](design-sections.md) depth rubric (요약, ≥2 components, ≥3 flow steps)
-7. Ch.6 **상세설계**: `### 스펙 인덱스` first; API field + error tables, entity field table, ≥2 error branches; every Ch.5 component name referenced; `[ref:A-n]` not inline blockquotes
+6. Ch.5 **상위설계**: lead prose (≥2 sentences per ###) then mermaid/lists; ≥2 components; ≥3 flow steps
+7. Ch.6 **상세설계**: lead prose (≥1 sentence per ###) then tables; optional dev index table after chapter intro; ≥2 error branches; Ch.5 names in Ch.6; `[ref:A-n]` not inline blockquotes
 8. Ch.7 **마무리**: rollout, risks table, 열린 질문 (for each Ch.4 `권장(미확정)`)
-9. Ch.1: TL;DR, Goals/Non-Goals, reader path table, TOC (see [tdd-template.md](tdd-template.md))
-10. Ch.4: `### 결정 요약` table
-11. Ch.5: mermaid in ### 아키텍처 개요; `#### 한눈에` (3 bullets) after each Ch.5 ###
+9. Ch.1: opening paragraph (no ### TL;DR), Goals/Non-Goals, reader path table, TOC
+10. Ch.4: `### 결정 요약` table (only allowed “summary” heading in body)
+11. Ch.5: mermaid in ### 아키텍처 개요 — **no** `요약:` / `#### 한눈에`
 12. Write ## 부록 A and ## 부록 B after Ch.7
-13. Each subsection: **요약:** (PM) → technical detail (dev) → `[ref:A-n]` for Tier-2 (Appendix A)
+13. Ch.2–4: ≥8 sentences each; embed 6하 in prose; chapter bridges (see narrative-rules.md)
 
 Filename: `docs/design/YYYY-MM-DD-<feature_slug>-tdd.md`
 
@@ -143,10 +143,10 @@ Run the validator from this skill package (repo: `skills/prd-to-tdd/`, installed
 
 ```bash
 python scripts/validate-tdd.py docs/design/YYYY-MM-DD-<feature>-tdd.md
-python scripts/validate-tdd.py docs/design/YYYY-MM-DD-<feature>-tdd.md --readability
+python scripts/validate-tdd.py docs/design/YYYY-MM-DD-<feature>-tdd.md --narrative
 ```
 
-Default is **strict** (Ch.5–6 depth rubric). Legacy drafts: add `--lenient` to skip depth checks. **Both commands** must exit `0` before Phase 6.
+Default is **strict** (Ch.5–6 depth rubric). Legacy drafts: add `--lenient` to skip depth checks. **`--readability` is deprecated** (alias for `--narrative`). Both strict and `--narrative` must exit `0` before Phase 6.
 
 Use the path to `validate-tdd.py` inside the skill directory. `<feature>-tdd.md` lives in the **target project** under `docs/design/`.
 
