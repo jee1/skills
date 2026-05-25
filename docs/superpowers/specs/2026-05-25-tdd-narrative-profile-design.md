@@ -1,7 +1,7 @@
 # Design: TDD Narrative Profile (Story-First, No Meta-Labels)
 
 **Date:** 2026-05-25  
-**Status:** Implemented  
+**Status:** Implemented (Ch.1 subsection order superseded by [2026-05-25-tdd-layout-diagrams-design.md](2026-05-25-tdd-layout-diagrams-design.md))  
 **Scope:** Restore the `prd-to-tdd` skill’s core promise — read front-to-back like a novel (기승전결, 6하원칙, forward-only background chain) — while keeping strict depth (tables, cross-refs, appendices). Replace label-driven readability (요약, 한눈에, TL;DR) with self-explanatory prose.
 
 **Supersedes (partially):** `2026-05-25-tdd-readability-design.md` — navigation lanes and anti-blockquote rules carry forward; **meta-label requirements are removed**.
