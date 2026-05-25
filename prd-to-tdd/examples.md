@@ -296,4 +296,66 @@ Client → ApiServer → DB
 Health check returns 200.
 ```
 
-**Violations:** no 요약; <2 components with names; 1-line data flow; no API table; no error branches; no source blocks per subsection; happy-path only.
+**Violations:** no 요약; <2 components with names; 1-line data flow; no API table; no error branches; no `[ref:A-n]` / Appendix A; happy-path only.
+
+---
+
+## Readability — Good
+
+```markdown
+## 1. 서문
+
+### TL;DR
+Problem sentence. Solution sentence. Impact sentence.
+
+### Goals / Non-Goals
+**Goals:** …
+**Non-Goals:** …
+
+### 이 문서 읽는 법
+| PM | TL;DR → §5 diagram | ~2분 |
+
+## 5. 상위설계
+
+### 아키텍처 개요
+요약: …
+```mermaid
+flowchart LR
+  Client --> ApiServer
+```
+#### 한눈에
+- bullet one
+- bullet two
+- bullet three
+
+## 6. 상세설계
+
+### 스펙 인덱스
+| POST /items | items | 400, 409 |
+
+### API 및 인터페이스
+요약: …
+| Field | Type | Required | Note |
+…
+Field detail in table [ref:A-1].
+
+## 부록 A. 출처·코드 위치
+| A-1 | claim | prd | code | url |
+```
+
+**Why good:** PM entry (Ch.1), diagram + 한눈에, spec index, tables first, Tier-2 in Appendix A not inline blockquotes.
+
+---
+
+## Readability — Bad
+
+```markdown
+## 5. 상위설계
+
+### 아키텍처 개요
+요약: layers…
+> **사실:** Stripe refund API…
+> **근거:** …
+```
+
+**Violations:** no mermaid; no `#### 한눈에`; `> **사실:**` in Ch.5 (use `[ref:A-n]` + Appendix A); no Ch.1 TL;DR / reader paths.

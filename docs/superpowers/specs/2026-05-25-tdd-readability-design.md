@@ -1,7 +1,7 @@
 # Design: TDD Readability Profile (Triple-Audience)
 
 **Date:** 2026-05-25  
-**Status:** Approved — pending implementation  
+**Status:** Implemented  
 **Scope:** Improve readability of `prd-to-tdd` output for PM, backend developers, and audit readers **equally**, without splitting into multiple files or weakening strict depth coverage.
 
 **Related specs:**

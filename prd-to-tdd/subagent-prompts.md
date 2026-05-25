@@ -57,6 +57,11 @@ Checklist:
 15. Ch.6 ### 핵심 처리 흐름 has ≥2 error/retry branches (not happy-path only).
 16. Every Ch.5 component **Name** appears in Ch.6; no field-level detail in Ch.5; no new Ch.6 component absent from Ch.5.
 17. Brownfield: each component bullet has (신규) or (기존).
+18. Ch.1 has ### TL;DR, Goals/Non-Goals, 이 문서 읽는 법, 목차.
+19. Ch.4 has ### 결정 요약 table aligned with blockquotes.
+20. Ch.5 ### 아키텍처 개요 contains ```mermaid fence; each Ch.5 ### ends with #### 한눈에 (3 bullets).
+21. Ch.6 opens with ### 스펙 인덱스; no > **사실:** in Ch.5–6; Tier-2 uses [ref:A-n].
+22. Appendix A covers all [ref:A-n]; Appendix B mirrors Ch.4 blockquotes when present.
 
 Return ONLY findings in format:
 severity | chapter:line | issue | fix
