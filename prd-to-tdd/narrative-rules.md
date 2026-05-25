@@ -48,9 +48,15 @@ Every chapter must visibly answer its required dimensions (one sentence minimum)
    - Do not invent modules, services, or tables that do not exist
    - Ch.4 introduces design decisions from PRD + stack constraints
 
-5. **No repair appendix** — do not add a section that re-explains earlier chapters.
+5. **No repair appendix** — do not add a section that re-explains earlier chapters (Appendix A/B are citation archives, not narrative rewrites).
 
-6. **Mixed audience pattern** — within each subsection:
+6. **Static cross-references allowed** — link to a fixed section anchor, e.g. `[§6.1](#61-api-및-인터페이스)` or `[ref:A-3]`. Forbidden: temporal phrases only (see rule 1).
+
+7. **Ch.5 `#### 한눈에`** — after each Ch.5 `###` subsection content, add exactly 3 PM-readable bullets (no field-level schema).
+
+8. **Ch.5–6 Tier-2** — use `[ref:A-n]`; do not use inline `> **사실:**` blocks in Ch.5–6.
+
+9. **Mixed audience pattern** — within each subsection:
    - First line: plain-language summary (PM-readable)
    - Following lines: technical detail (developer/audit)
 
