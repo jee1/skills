@@ -683,24 +683,25 @@ def main() -> int:
     args = sys.argv[1:]
     strict = True
     readability = False
-    while args and args[0].startswith("--"):
-        flag = args[0]
-        if flag == "--lenient":
+    paths: list[str] = []
+    for arg in args:
+        if arg == "--lenient":
             strict = False
-        elif flag == "--readability":
+        elif arg == "--readability":
             readability = True
-        else:
-            print(f"Unknown flag: {flag}", file=sys.stderr)
+        elif arg.startswith("--"):
+            print(f"Unknown flag: {arg}", file=sys.stderr)
             return 2
-        args = args[1:]
-    if len(args) != 1:
+        else:
+            paths.append(arg)
+    if len(paths) != 1:
         print(
             f"Usage: {sys.argv[0]} [--lenient] [--readability] <path-to-tdd.md>",
             file=sys.stderr,
         )
         return 2
 
-    path = Path(args[0])
+    path = Path(paths[0])
     if not path.is_file():
         print(f"File not found: {path}", file=sys.stderr)
         return 2
