@@ -71,9 +71,14 @@ Ch.6 may include a **dev index table** right after the chapter intro paragraph (
 
 ## Ch.1 서문
 
-- **Opening paragraph** (no subsection title): 3–5 sentences — scope, outcome, rollout hint. Must lead into Ch.2.
-- **Keep for navigation:** Goals / Non-Goals, reader path table, TOC.
-- **Do not use** `### TL;DR`.
+**Order (scan-first, then story):**
+
+1. `### 목차` — full document map (first `###` in Ch.1)
+2. `### 이 문서 읽는 법` — reader path table
+3. **Opening paragraph** (no subsection title): 3–5 sentences — scope, outcome, rollout hint
+4. `### Goals / Non-Goals`
+
+No prose before `### 목차`. Opening must lead into Ch.2. **Do not use** `### TL;DR`.
 
 ## Design Alternatives — When Multiple Options Exist
 

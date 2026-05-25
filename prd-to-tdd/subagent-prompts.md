@@ -57,7 +57,7 @@ Checklist:
 15. Ch.6 ### 핵심 처리 흐름 has ≥2 error/retry branches (not happy-path only).
 16. Every Ch.5 component **Name** appears in Ch.6; no field-level detail in Ch.5; no new Ch.6 component absent from Ch.5.
 17. Brownfield: each component bullet has (신규) or (기존).
-18. Ch.1 opening paragraph (≥3 sentences, no TL;DR section), Goals/Non-Goals, 이 문서 읽는 법, 목차.
+18. Ch.1 order: ### 목차 → ### 이 문서 읽는 법 → opening (≥3 sentences, no TL;DR) → Goals/Non-Goals.
 19. Ch.2–4 each ≥8 prose sentences; bridges Ch.2→3, 3→4, 4→5 feel causal when read in order.
 20. Ch.4 has ### 결정 요약 table aligned with blockquotes.
 21. Ch.5 ### 아키텍처 개요 contains ```mermaid`; each Ch.5 ### has ≥2 lead sentences before structure.

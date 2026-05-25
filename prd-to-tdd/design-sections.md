@@ -163,7 +163,7 @@ See [examples.md](examples.md) § Ch.5–6 depth for full good/bad excerpts.
 
 | Area | Rule |
 |------|------|
-| Ch.1 | Opening paragraph ≥3 sentences (no `### TL;DR`); Goals, reader paths, TOC |
+| Ch.1 | `### 목차` → `### 이 문서 읽는 법` → opening ≥3 sentences → `### Goals / Non-Goals` (no `### TL;DR`) |
 | Ch.2–4 | Each ≥8 sentences; bridges Ch.2→3, 3→4, 4→5 |
 | Ch.4 | `### 결정 요약` table ≥1 data row |
 | Ch.5 | mermaid in ### 아키텍처 개요; ≥2 lead sentences per ### |

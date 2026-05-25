@@ -672,24 +672,54 @@ def check_narrative(body: str) -> list[ValidationError]:
             )
 
     if ch1:
-        first_sub = re.search(r"^###\s+", ch1, re.M)
-        opening = ch1[: first_sub.start()] if first_sub else ch1
-        opening = re.sub(r"^#\s+.*\n", "", opening, count=1, flags=re.M)
-        if _count_sentences(opening) < MIN_CH1_OPENING_SENTENCES:
-            errors.append(
-                ValidationError(
-                    0,
-                    "ch1-opening-thin",
-                    f"Ch.1 needs ≥{MIN_CH1_OPENING_SENTENCES} opening sentences before first ### (no TL;DR section)",
-                )
-            )
+        toc_m = CH1_TOC.search(ch1)
+        reader_m = CH1_READER.search(ch1)
+        goals_m = CH1_GOALS.search(ch1)
         for pattern, code, label in (
-            (CH1_GOALS, "ch1-goals-missing", "### Goals / Non-Goals"),
-            (CH1_READER, "ch1-reader-missing", "### 이 문서 읽는 법"),
             (CH1_TOC, "ch1-toc-missing", "### 목차"),
+            (CH1_READER, "ch1-reader-missing", "### 이 문서 읽는 법"),
+            (CH1_GOALS, "ch1-goals-missing", "### Goals / Non-Goals"),
         ):
             if not pattern.search(ch1):
                 errors.append(ValidationError(0, code, f"Ch.1 missing {label}"))
+        if toc_m and reader_m and goals_m:
+            if not (toc_m.start() < reader_m.start() < goals_m.start()):
+                errors.append(
+                    ValidationError(
+                        0,
+                        "ch1-section-order",
+                        "Ch.1 order must be: ### 목차 → ### 이 문서 읽는 법 → opening → ### Goals / Non-Goals",
+                    )
+                )
+            first_sub = re.search(r"^###\s+", ch1, re.M)
+            if first_sub and first_sub.start() != toc_m.start():
+                errors.append(
+                    ValidationError(
+                        0,
+                        "ch1-toc-not-first",
+                        "Ch.1 ### 목차 must be the first ### subsection (scan-first navigation)",
+                    )
+                )
+            pre_toc = ch1[: toc_m.start()]
+            pre_toc = re.sub(r"^##\s+1\.\s+서문\s*", "", pre_toc, count=1, flags=re.M).strip()
+            if pre_toc:
+                errors.append(
+                    ValidationError(
+                        0,
+                        "ch1-content-before-toc",
+                        "Ch.1 must start with ### 목차 immediately after ## 1. 서문 (no prose before TOC)",
+                    )
+                )
+            opening = ch1[reader_m.end() : goals_m.start()]
+            if _count_sentences(opening) < MIN_CH1_OPENING_SENTENCES:
+                errors.append(
+                    ValidationError(
+                        0,
+                        "ch1-opening-thin",
+                        f"Ch.1 needs ≥{MIN_CH1_OPENING_SENTENCES} opening sentences "
+                        "between ### 이 문서 읽는 법 and ### Goals / Non-Goals (no TL;DR section)",
+                    )
+                )
 
     for num, chapter, code in (
         (2, ch2, "ch2-min-sentences"),

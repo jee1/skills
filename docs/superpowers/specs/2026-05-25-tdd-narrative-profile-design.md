@@ -65,13 +65,20 @@ One Markdown file (`docs/design/YYYY-MM-DD-<feature>-tdd.md`) where:
 
 ## 3. Document Architecture
 
-### Ch.1 — 서문 (entry + wayfinding only)
+### Ch.1 — 서문 (scan-first navigation, then entry)
+
+**Required order:**
+
+1. `### 목차` — first subsection in Ch.1 (no prose before it)
+2. `### 이 문서 읽는 법` — reader path table
+3. **Opening paragraph** (no subsection title): 3–5 sentences — scope, outcome, rollout hint; must lead into Ch.2
+4. `### Goals / Non-Goals`
 
 | Keep | Change / remove |
 |------|-----------------|
 | Goals / Non-Goals | Remove `### TL;DR` heading |
-| `### 이 문서 읽는 법` (reader path table) | Replace with **3–5 sentence opening paragraph** (no subsection title): scope, outcome, rollout hint |
-| `### 목차` | Opening must logically lead into Ch.2 first sentence |
+| `### 목차` | Move to **top** of Ch.1 (before reader paths and opening) |
+| `### 이 문서 읽는 법` | Immediately after 목차; before opening paragraph |
 
 ### Ch.2–4 — 起 · 承 · 转 (pure narrative)
 

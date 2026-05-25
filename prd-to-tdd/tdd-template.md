@@ -19,7 +19,20 @@ review_rounds: 0
 
 ## 1. 서문
 
-{{3–5 sentences: who needs this, why now, PRD source, expected outcome, rollout hint. No ### TL;DR.}}
+### 목차
+
+1. [서문](#1-서문)
+…
+
+### 이 문서 읽는 법
+
+| 독자 | 먼저 볼 곳 | 목표 |
+|------|-----------|------|
+| PM | Ch.1 opening + Goals → [§5](#5-상위설계) diagram | ~3분 |
+| Dev | [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) tables | ~5분 |
+| 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | ~3분 |
+
+{{3–5 sentences: who needs this, why now, PRD source, expected outcome, rollout hint. No ### TL;DR. Placed after navigation blocks; must lead into Ch.2.}}
 
 ### Goals / Non-Goals
 
@@ -29,19 +42,6 @@ review_rounds: 0
 
 **Non-Goals:**
 - …
-
-### 이 문서 읽는 법
-
-| 독자 | 먼저 볼 곳 | 목표 |
-|------|-----------|------|
-| PM | Ch.1 opening → [§5](#5-상위설계) diagram | ~3분 |
-| Dev | [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) tables | ~5분 |
-| 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | ~3분 |
-
-### 목차
-
-1. [서문](#1-서문)
-…
 
 ## 2. 배경과 문제
 

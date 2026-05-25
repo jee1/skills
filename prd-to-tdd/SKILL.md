@@ -127,7 +127,7 @@ If user defers (“나중에”), keep `> **갈림:**` + `> **상태:** 권장(�
 6. Ch.5 **상위설계**: lead prose (≥2 sentences per ###) then mermaid/lists; ≥2 components; ≥3 flow steps
 7. Ch.6 **상세설계**: lead prose (≥1 sentence per ###) then tables; optional dev index table after chapter intro; ≥2 error branches; Ch.5 names in Ch.6; `[ref:A-n]` not inline blockquotes
 8. Ch.7 **마무리**: rollout, risks table, 열린 질문 (for each Ch.4 `권장(미확정)`)
-9. Ch.1: opening paragraph (no ### TL;DR), Goals/Non-Goals, reader path table, TOC
+9. Ch.1: ### 목차 → ### 이 문서 읽는 법 → opening paragraph (no ### TL;DR) → Goals/Non-Goals
 10. Ch.4: `### 결정 요약` table (only allowed “summary” heading in body)
 11. Ch.5: mermaid in ### 아키텍처 개요 — **no** `요약:` / `#### 한눈에`
 12. Write ## 부록 A and ## 부록 B after Ch.7
