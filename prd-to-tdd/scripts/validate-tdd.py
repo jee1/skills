@@ -79,6 +79,21 @@ OFFICIAL_URL = re.compile(
 
 SOURCE_BLOCK = re.compile(r"^\s*>\s*\*\*(결정|사실|근거|코드|갈림|대안|권장|상태):\*\*", re.M)
 
+REF_TAG = re.compile(r"\[ref:(A-\d+)\]", re.I)
+APPENDIX_A_HEADER = re.compile(r"^##\s+부록\s+A", re.M)
+APPENDIX_B_HEADER = re.compile(r"^##\s+부록\s+B", re.M)
+MERMAID_FENCE = re.compile(r"```mermaid[\s\S]*?```", re.M)
+HANNUINE_HEADER = re.compile(r"^####\s+한눈에", re.M)
+CH1_TLDR = re.compile(r"^###\s+TL;DR", re.M)
+CH1_GOALS = re.compile(r"^###\s+Goals\s*/\s*Non-Goals", re.M)
+CH1_READER = re.compile(r"^###\s+이\s+문서\s+읽는\s+법", re.M)
+CH1_TOC = re.compile(r"^###\s+목차", re.M)
+CH4_SUMMARY = re.compile(r"^###\s+결정\s+요약", re.M)
+CH6_SPEC_INDEX = re.compile(r"^###\s+스펙\s+인덱스", re.M)
+SASIL_BLOCK = re.compile(r"^\s*>\s*\*\*사실:\*\*", re.M)
+APPENDIX_A_ID = re.compile(r"^\|\s*(A-\d+)\s*\|", re.M)
+MIN_HANNUINE_BULLETS = 3
+
 # --- Strict depth profile (default) ---
 SUBSECTION_MIN_CHARS = 120
 MIN_CH5_COMPONENTS = 2
@@ -271,14 +286,6 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
                         f"Subsection content too thin ({len(content)} chars, min {SUBSECTION_MIN_CHARS})",
                     )
                 )
-            if len(content) >= 80 and not SOURCE_BLOCK.search(content):
-                errors.append(
-                    ValidationError(
-                        line_num,
-                        "subsection-source-missing",
-                        "Subsection needs a source block (> **사실:** or **결정:**)",
-                    )
-                )
 
     comp_line, components_sec = _subsection_content(ch5, r"###\s+구성요소\s+및\s+책임")
     component_names = _extract_component_names(components_sec)
@@ -394,23 +401,18 @@ def check_design_subsections(body: str) -> list[ValidationError]:
 
 
 def check_ch4_ch6_sources(body: str) -> list[ValidationError]:
-    """Ch.4–6 should contain source blocks when those chapters have substance."""
+    """Ch.4 should contain Tier-1 source blocks when it has substance."""
     errors: list[ValidationError] = []
     ch4 = _chapter_slice(body, r"^##\s+4\.\s+", r"^##\s+5\.\s+")
-    ch5 = _chapter_slice(body, r"^##\s+5\.\s+", r"^##\s+6\.\s+")
-    ch6 = _chapter_slice(body, r"^##\s+6\.\s+", r"^##\s+7\.\s+")
 
-    for label, chunk in (("4", ch4), ("5", ch5), ("6", ch6)):
-        if len(chunk.strip()) < 80:
-            continue
-        if not SOURCE_BLOCK.search(chunk):
-            errors.append(
-                ValidationError(
-                    0,
-                    "source-block-missing",
-                    f"Ch.{label} has content but no > **결정:** / **갈림:** / **사실:** source blocks",
-                )
+    if len(ch4.strip()) >= 80 and not SOURCE_BLOCK.search(ch4):
+        errors.append(
+            ValidationError(
+                0,
+                "source-block-missing",
+                "Ch.4 has content but no > **결정:** / **갈림:** source blocks",
             )
+        )
     return errors
 
 
@@ -521,7 +523,143 @@ def check_tier1_decisions(body: str, mode: str) -> list[ValidationError]:
     return errors
 
 
-def validate(path: Path, *, strict: bool = True) -> list[ValidationError]:
+def _body_before_appendices(body: str) -> str:
+    match = APPENDIX_A_HEADER.search(body)
+    if match:
+        return body[: match.start()]
+    return body
+
+
+def _appendix_slice(body: str, header_pattern: re.Pattern[str]) -> str:
+    match = header_pattern.search(body)
+    if not match:
+        return ""
+    begin = match.start()
+    next_appendix = re.search(r"^##\s+부록\s+", body[begin + 1 :], re.M)
+    if next_appendix:
+        return body[begin : begin + 1 + next_appendix.start()]
+    return body[begin:]
+
+
+def _count_hannuine_bullets(subsection: str) -> int:
+    match = HANNUINE_HEADER.search(subsection)
+    if not match:
+        return 0
+    after = subsection[match.end() :]
+    count = 0
+    for line in after.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#### ") or stripped.startswith("### ") or stripped.startswith("## "):
+            break
+        if re.match(r"^[-*]\s+", stripped):
+            count += 1
+    return count
+
+
+def check_readability(body: str) -> list[ValidationError]:
+    """Readability profile: navigation, diagrams, appendix citations."""
+    errors: list[ValidationError] = []
+
+    ch1 = _chapter_slice(body, r"^##\s+1\.\s+서문", r"^##\s+2\.\s+")
+    if ch1:
+        for pattern, code, label in (
+            (CH1_TLDR, "ch1-tldr-missing", "### TL;DR"),
+            (CH1_GOALS, "ch1-goals-missing", "### Goals / Non-Goals"),
+            (CH1_READER, "ch1-reader-missing", "### 이 문서 읽는 법"),
+            (CH1_TOC, "ch1-toc-missing", "### 목차"),
+        ):
+            if not pattern.search(ch1):
+                errors.append(ValidationError(0, code, f"Ch.1 missing {label}"))
+
+    ch4 = _chapter_slice(body, r"^##\s+4\.\s+", r"^##\s+5\.\s+")
+    if ch4:
+        if not CH4_SUMMARY.search(ch4):
+            errors.append(ValidationError(0, "ch4-summary-missing", "Ch.4 missing ### 결정 요약"))
+        else:
+            _, summary_sec = _subsection_content(ch4, r"###\s+결정\s+요약")
+            if _count_table_data_rows(summary_sec) < 1:
+                errors.append(
+                    ValidationError(0, "ch4-summary-empty", "### 결정 요약 needs ≥1 data row")
+                )
+
+    ch5 = _chapter_slice(body, r"^##\s+5\.\s+상위설계", r"^##\s+6\.\s+")
+    if ch5:
+        _, arch_sec = _subsection_content(ch5, r"###\s+아키텍처\s+개요")
+        if arch_sec and not MERMAID_FENCE.search(arch_sec):
+            errors.append(
+                ValidationError(0, "ch5-mermaid-missing", "Ch.5 ### 아키텍처 개요 needs ```mermaid diagram")
+            )
+        for pattern, label in (
+            (r"###\s+아키텍처\s+개요", "아키텍처 개요"),
+            (r"###\s+구성요소\s+및\s+책임", "구성요소 및 책임"),
+            (r"###\s+데이터\s+흐름", "데이터 흐름"),
+        ):
+            line_num, content = _subsection_content(ch5, pattern)
+            if not content:
+                continue
+            bullets = _count_hannuine_bullets(content)
+            if bullets < MIN_HANNUINE_BULLETS:
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "ch5-hannuine-missing",
+                        f"Ch.5 ### {label} needs #### 한눈에 with ≥{MIN_HANNUINE_BULLETS} bullets (found {bullets})",
+                    )
+                )
+
+    ch6 = _chapter_slice(body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
+    if ch6:
+        if not CH6_SPEC_INDEX.search(ch6):
+            errors.append(ValidationError(0, "ch6-spec-index-missing", "Ch.6 missing ### 스펙 인덱스"))
+        else:
+            spec_pos = CH6_SPEC_INDEX.search(ch6)
+            api_pos = re.search(r"^###\s+API\s+및\s+인터페이스", ch6, re.M)
+            if spec_pos and api_pos and spec_pos.start() > api_pos.start():
+                errors.append(
+                    ValidationError(0, "ch6-spec-index-order", "### 스펙 인덱스 must appear before ### API 및 인터페이스")
+                )
+            _, spec_sec = _subsection_content(ch6, r"###\s+스펙\s+인덱스")
+            if _count_table_data_rows(spec_sec) < 1:
+                errors.append(
+                    ValidationError(0, "ch6-spec-index-empty", "### 스펙 인덱스 needs ≥1 data row")
+                )
+
+    for label, chunk in (("5", ch5), ("6", ch6)):
+        if chunk and SASIL_BLOCK.search(chunk):
+            errors.append(
+                ValidationError(
+                    0,
+                    "ch56-sasil-forbidden",
+                    f"Ch.{label} must not use > **사실:** blockquotes; use [ref:A-n] + Appendix A",
+                )
+            )
+
+    if not APPENDIX_A_HEADER.search(body):
+        errors.append(ValidationError(0, "appendix-a-missing", "Missing ## 부록 A. 출처·코드 위치"))
+    else:
+        appendix_a = _appendix_slice(body, APPENDIX_A_HEADER)
+        appendix_ids = {m.group(1).upper() for m in APPENDIX_A_ID.finditer(appendix_a)}
+        main_body = _body_before_appendices(body)
+        for ref in {m.group(1).upper() for m in REF_TAG.finditer(main_body)}:
+            if ref not in appendix_ids:
+                errors.append(
+                    ValidationError(
+                        0,
+                        "appendix-a-unresolved-ref",
+                        f"[ref:{ref}] in body has no matching row in Appendix A",
+                    )
+                )
+
+    ch4_has_blockquote = bool(re.search(r"^\s*>\s*\*\*(결정|갈림):\*\*", ch4, re.M)) if ch4 else False
+    if ch4_has_blockquote and not APPENDIX_B_HEADER.search(body):
+        errors.append(
+            ValidationError(0, "appendix-b-missing", "Ch.4 has blockquotes but ## 부록 B is missing")
+        )
+
+    return errors
+
+
+def validate(path: Path, *, strict: bool = True, readability: bool = False) -> list[ValidationError]:
     text = path.read_text(encoding="utf-8")
     meta, body, errors = parse_frontmatter(text)
     mode = meta.get("mode", "")
@@ -535,6 +673,8 @@ def validate(path: Path, *, strict: bool = True) -> list[ValidationError]:
     errors.extend(check_pending_open_questions(body))
     if strict:
         errors.extend(check_design_depth(body, mode))
+    if readability:
+        errors.extend(check_readability(body))
 
     return errors
 
@@ -542,11 +682,22 @@ def validate(path: Path, *, strict: bool = True) -> list[ValidationError]:
 def main() -> int:
     args = sys.argv[1:]
     strict = True
-    if args and args[0] == "--lenient":
-        strict = False
+    readability = False
+    while args and args[0].startswith("--"):
+        flag = args[0]
+        if flag == "--lenient":
+            strict = False
+        elif flag == "--readability":
+            readability = True
+        else:
+            print(f"Unknown flag: {flag}", file=sys.stderr)
+            return 2
         args = args[1:]
     if len(args) != 1:
-        print(f"Usage: {sys.argv[0]} [--lenient] <path-to-tdd.md>", file=sys.stderr)
+        print(
+            f"Usage: {sys.argv[0]} [--lenient] [--readability] <path-to-tdd.md>",
+            file=sys.stderr,
+        )
         return 2
 
     path = Path(args[0])
@@ -554,7 +705,7 @@ def main() -> int:
         print(f"File not found: {path}", file=sys.stderr)
         return 2
 
-    errors = validate(path, strict=strict)
+    errors = validate(path, strict=strict, readability=readability)
     if not errors:
         print(f"OK: {path}")
         return 0
