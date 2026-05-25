@@ -17,39 +17,58 @@ review_rounds: 0
 
 ## 1. 서문
 
-<!-- Who reads this, Why now, When this applies, PRD source one line -->
+<!-- Who, Why, When; PRD source -->
 
 ## 2. 배경과 문제
 
-<!-- What problem (PRD), Where in product scope. No implementation yet. -->
+<!-- What, Where from PRD; no implementation -->
 
 ## 3. 현재 시스템
 
-<!-- Brownfield only. As-Is: architecture, data flow, key components. Tier-2 sources. -->
-<!-- Greenfield: rename H2 to "## 3. 시작점" — scaffold, deps, empty dirs only. -->
+<!-- Brownfield: As-Is. Greenfield: rename to "## 3. 시작점" -->
 
 ## 4. 갭과 설계 전환
 
-<!-- Brownfield: PRD↔code gaps; Tier-1 as **결정:** or **갈림:**+**권장:** -->
-<!-- Greenfield: rename to "## 4. 설계 결정" — same block shapes -->
-<!-- Ch.5 To-Be follows 권장/확정 only; 열린 질문 for 권장(미확정) -->
+<!-- Brownfield. Greenfield: "## 4. 설계 결정". Tier-1 **결정:** / **갈림:** blocks -->
 
-## 5. 목표 설계와 마무리
+## 5. 상위설계
 
-<!-- To-Be architecture, interfaces, rollout timing, risks, open questions. -->
+<!-- See design-sections.md — required ### subsections below -->
+
+### 아키텍처 개요
+
+### 구성요소 및 책임
+
+### 데이터 흐름
+
+## 6. 상세설계
+
+### API 및 인터페이스
+
+### 데이터 모델
+
+### 핵심 처리 흐름
+
+## 7. 마무리
+
+### 롤아웃·일정
+
+### 리스크
+
+### 열린 질문
 ```
 
 ## Chapter Title Variants by Mode
 
-| Mode | Chapter 3 H2 | Chapter 4 H2 |
-|------|--------------|--------------|
-| `brownfield` | `## 3. 현재 시스템` | `## 4. 갭과 설계 전환` |
-| `greenfield` | `## 3. 시작점` | `## 4. 설계 결정` |
+| Mode | Chapter 3 H2 | Chapter 4 H2 | Chapters 5–7 |
+|------|--------------|--------------|--------------|
+| `brownfield` | `## 3. 현재 시스템` | `## 4. 갭과 설계 전환` | 동일 |
+| `greenfield` | `## 3. 시작점` | `## 4. 설계 결정` | 동일 |
 
-Chapters 1, 2, 5 titles are identical in both modes.
+Chapters 1, 2, 5, 6, 7 titles are **identical** in both modes.
 
 ## Filename Convention
 
 `docs/design/YYYY-MM-DD-{{feature_slug}}-tdd.md`
 
-Example: `docs/design/2026-05-25-order-cancel-api-tdd.md`
+See [design-sections.md](design-sections.md) for subsection content rules.

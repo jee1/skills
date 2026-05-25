@@ -6,7 +6,7 @@ Cursor Agent Skills maintained in this repository.
 
 | Skill | Description |
 |-------|-------------|
-| [prd-to-tdd](prd-to-tdd/) | PRD + codebase → forward-only Technical Design Document (TDD) |
+| [prd-to-tdd](prd-to-tdd/) | PRD + codebase → TDD (7 chapters: 상위설계, 상세설계, 마무리) |
 
 ## Install (Cursor)
 

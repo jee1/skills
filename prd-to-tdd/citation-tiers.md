@@ -1,6 +1,8 @@
 # Citation Tiers
 
-Every technical claim in **Chapters 4–5** must carry a source block. Tier depends on claim type.
+Every technical claim in **Chapters 4–6** must carry a source block when applicable. Tier depends on claim type.
+
+**Chapter roles:** Ch.4 = decisions; Ch.5 = high-level To-Be; Ch.6 = interfaces/schemas/flows. See [design-sections.md](design-sections.md).
 
 ## Tier-1 — Core Design Decisions
 
@@ -83,7 +85,7 @@ Never use community-only sources for Tier-1 decisions.
 
 ## Prohibited
 
-- Ch.4–5 bullet with technical content and no source block within the same subsection
+- Ch.4–6 bullet with technical content and no source block in the same subsection
 - Tier-1 decision with only PRD reference (must add official URL)
 - Fabricated URLs or paths
 - Picking one Tier-1 option in prose without `**결정:**` or `**갈림:**` block

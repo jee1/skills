@@ -33,6 +33,7 @@ This skill produces TDD only. It does **not** generate implementation plans, tas
 | Post-TDD | Standalone — no auto handoff to `writing-plans` or SDD |
 | Validation | **Approach 3:** script (mechanical) + **3 parallel subagents** (semantic) |
 | Greenfield | Auto-detect; adapt Chapter 3 (시작점) when no domain code |
+| **Design alternatives** | Single winner → `**결정:**`; real fork → `**갈림:**`+`**권장:**`; Tier-1 high impact → ask user before Ch.4 |
 
 ---
 

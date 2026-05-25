@@ -40,16 +40,18 @@ You are the narrative-reviewer for a Technical Design Document (TDD).
 Read the TDD draft and narrative-rules.md (forward-only, 기승전결, 6하원칙).
 
 Checklist:
-1. Five chapters in fixed order; mode-appropriate Ch.3/Ch.4 titles.
-2. No temporal back-references (Korean and English forbidden phrases).
-3. Every concept defined before use across chapter boundaries.
-4. Brownfield: code-only facts first in Ch.3; PRD-only first in Ch.4.
-5. Greenfield: Ch.3 must not describe non-existent domain modules.
-6. Each chapter answers its 6하원칙 dimensions (see narrative-rules table).
-7. Mixed audience: summary line before technical detail in subsections.
-8. No appendix re-explaining earlier content.
-9. Design alternatives: clear winner uses **결정:**; real fork uses **갈림:**+**권장:**+**상태:**; no silent pick when fork was documented in outline.
-10. Ch.5 To-Be follows one path (권장 or 확정); **열린 질문** present for each Ch.4 `권장(미확정)`.
+1. Seven chapters in fixed order (1–7); mode-appropriate Ch.3/Ch.4 titles; Ch.5–7 titles identical across modes.
+2. Ch.5 has ### 아키텍처 개요, ### 구성요소 및 책임, ### 데이터 흐름.
+3. Ch.6 has ### API 및 인터페이스, ### 데이터 모델, ### 핵심 처리 흐름.
+4. Ch.7 has ### 롤아웃·일정 (or 롤아웃 및 일정), ### 리스크, ### 열린 질문.
+5. No temporal back-references (Korean and English forbidden phrases).
+6. Every concept defined before use; component names first in Ch.5 before Ch.6 detail.
+7. Brownfield: code-only facts first in Ch.3; PRD-only first in Ch.4.
+8. Greenfield: Ch.3 must not describe non-existent domain modules.
+9. Each chapter answers its 6하원칙 dimensions (see narrative-rules table).
+10. Mixed audience: 요약 line before technical detail in subsections.
+11. No appendix re-explaining earlier content.
+12. Design alternatives: **결정:** / **갈림:** rules; Ch.5–6 follow one To-Be path; Ch.7 열린 질문 for 권장(미확정).
 
 Return ONLY findings in format:
 severity | chapter:line | issue | fix
@@ -73,7 +75,7 @@ You are the citation-reviewer for a Technical Design Document (TDD).
 Read the TDD draft, citation-tiers.md, and the source PRD text.
 
 Checklist:
-1. Every technical claim in Ch.4–5 has a source block in the same subsection.
+1. Every technical claim in Ch.4–6 has a source block in the same subsection.
 2. Tier-1 topics use either:
    - **결정:** + **근거:** (official URL) + **코드:**
    - **갈림:** + **대안:** + **권장:** + **근거:** (official URL for 권장) + **코드:** + **상태:**
@@ -83,6 +85,7 @@ Checklist:
 6. URL format looks intentional (not placeholder example.com unless marked).
 7. PRD anchors match actual PRD section/content.
 8. No Tier-1 choice stated only in prose without a source block.
+9. Ch.5–6 content matches design-sections.md (high-level in 5, detail in 6).
 
 Return ONLY findings in format:
 severity | chapter:line | issue | fix
@@ -113,6 +116,8 @@ Checklist:
 4. **코드:** paths in citation blocks must exist; line ranges plausible.
 5. "미구현" / "PRD-only" labels present for PRD items absent in code (brownfield).
 6. Do not require code citations for Greenfield Tier-1 when marked (Greenfield — 코드 없음).
+7. Ch.5 As-Is vs To-Be: Ch.5–6 describe target state only; current state stays in Ch.3.
+8. Component/API names in Ch.6 must appear in Ch.5 first.
 
 Return ONLY findings in format:
 severity | chapter:line | issue | fix

@@ -10,7 +10,11 @@ TDD prose must read **front to back like a novel**. Each chapter assumes only wh
 | 2. 배경과 문제 | 起→承 | What problem and scope (from PRD) |
 | 3. 현재 시스템 / 시작점 | 承 | What exists today (code or scaffold) |
 | 4. 갭과 설계 전환 / 설계 결정 | 转 | Why we change or choose; core decisions |
-| 5. 목표 설계와 마무리 | 结 | How the target looks; when and risks |
+| 5. 상위설계 | 结 (macro) | Target architecture, components, data flow |
+| 6. 상세설계 | 结 (micro) | APIs, schemas, processing logic |
+| 7. 마무리 | 结 (close) | Rollout, risks, open questions |
+
+Detail rules for Ch.5–6: [design-sections.md](design-sections.md).
 
 ## 6하원칙 per Chapter
 
@@ -19,8 +23,10 @@ TDD prose must read **front to back like a novel**. Each chapter assumes only wh
 | 1 | ✓ | | ✓ | | ✓ | |
 | 2 | | ✓ | | ✓ | | |
 | 3 | | ✓ | | | | ✓ (current) |
-| 4 | | ✓ | | | ✓ | ✓ (target direction) |
-| 5 | | ✓ | ✓ | | | ✓ (target detail) |
+| 4 | | ✓ | | | ✓ | ✓ (direction) |
+| 5 | | ✓ | | | | ✓ (high-level) |
+| 6 | | ✓ | | | | ✓ (detailed) |
+| 7 | | | ✓ | | | ✓ (rollout) |
 
 Every chapter must visibly answer its required dimensions (one sentence minimum).
 
@@ -54,17 +60,17 @@ Do **not** silently pick one option when the fork is real. Use the decision tree
 
 ### Decision tree (apply in Phase 3 outline)
 
-| Situation | Ch.4 format | Ch.5 | User ask? |
-|-----------|-------------|------|-----------|
-| **Single clear winner** — code, PRD, or constraints favor one option | `> **결정:**` block | To-Be follows that decision | No |
-| **Real fork** — 2–3 viable options, no clear winner | `> **갈림:**` + `> **대안:**` + `> **권장:**` + `> **상태:**` | To-Be follows **권장**; list item under **열린 질문** if `권장(미확정)` | No |
-| **Tier-1 high impact fork** — auth, datastore, breaking API, major dependency contract | Same as fork; after user answers use `> **결정:**` + `> **상태:** 확정` | To-Be uses confirmed choice | **Yes — once, before Ch.4 draft** |
+| Situation | Ch.4 format | Ch.5–6 To-Be | Ch.7 | User ask? |
+|-----------|-------------|--------------|------|-----------|
+| **Single clear winner** | `> **결정:**` | Follows that decision | Risks / rollout | No |
+| **Real fork** | `> **갈림:**` + … + `> **상태:** 권장(미확정)` | Follows **권장** in 상위·상세 | **열린 질문** with “최종 선택 필요” | No |
+| **Tier-1 high impact fork** | After user answer: `> **결정:**` + `> **상태:** 확정` | Uses confirmed choice | Standard | **Yes — before Ch.4** |
 
 **Single clear winner signals:** existing code pattern to extend; PRD mandates one approach; repo already depends on one stack; one option fails a hard constraint.
 
 **Real fork signals:** PRD silent or ambiguous; multiple options fit code/ops constraints; trade-offs are balanced.
 
-**Tier-1 high impact (ask user):** choice affects security boundary, data durability, public API contract, or migration cost beyond one sprint. Present **2–3 options + agent recommendation** in the question; do not draft Ch.4–5 for that topic until answered.
+**Tier-1 high impact (ask user):** choice affects security boundary, data durability, public API contract, or migration cost beyond one sprint. Present **2–3 options + agent recommendation** in the question; do not draft Ch.4–7 for that topic until answered.
 
 ### Ch.4 source block shapes
 
@@ -90,17 +96,19 @@ Do **not** silently pick one option when the fork is real. Use the decision tree
 > **상태:** 확정
 ```
 
-### Ch.5 rules for forks
+### Ch.5–7 rules for forks
 
-- **To-Be (목표 설계)** always follows **권장** or **확정** choice — never an unnamed option.
-- If any Ch.4 block has `> **상태:** 권장(미확정)`, Ch.5 **열린 질문** must include matching “최종 선택 필요” item naming the **갈림** topic.
-- Do not present three parallel To-Be architectures; one narrative path only.
+- **상위설계·상세설계** always follow **권장** or **확정** choice from Ch.4 — never an unnamed option.
+- If any Ch.4 block has `> **상태:** 권장(미확정)`, Ch.7 **열린 질문** must include matching “최종 선택 필요” item.
+- Do not present parallel To-Be architectures; one narrative path in Ch.5–6.
+- Introduce component **names** in Ch.5 before API/schema detail in Ch.6.
 
 ## Outline Self-Check (before drafting)
 
 Before writing prose, verify the outline lists:
 
 - [ ] Every concept in introduction order (no concept used before listed)
+- [ ] Components (Ch.5), APIs/entities (Ch.6) listed in outline before draft
 - [ ] Each Tier-1 topic tagged: `single` | `multi-recommend` | `needs-user-confirm`
 - [ ] User confirmation obtained for all `needs-user-confirm` items before Ch.4 draft
 - [ ] Tier-1 decisions all scheduled for Ch.4
