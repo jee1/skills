@@ -47,7 +47,7 @@ Forbidden: temporal back-refs (`앞서`, `위에서`, `see above`) — **restate
 |-----------|---------|
 | `요약:` line prefix | Topic `###` titles (e.g. `### API 및 인터페이스`) |
 | `#### 한눈에` | Ch.4 `### 결정 요약` (audit index table only) |
-| `### TL;DR` in body | Ch.1 `### Goals / Non-Goals`, `### 이 문서 읽는 법`, `### 목차` |
+| `### TL;DR` in body | `## 목차`, `## 이 문서 읽는 법`, Ch.1 `### Goals / Non-Goals` |
 | `Who:` / `Why:` / `누가:` / `왜:` … | `[ref:A-n]`, Ch.4 Tier-1 blockquotes |
 
 ## Prose-then-table (Ch.5–6)
@@ -69,16 +69,34 @@ Ch.6 may include a **dev index table** right after the chapter intro paragraph (
 5. **No repair appendix** — Appendix A/B are citation archives only.
 6. **Static anchors OK** — `[§6](#6-상세설계)`, `[ref:A-3]`; not “see above”.
 
+## Front matter (before ## 1. 서문)
+
+1. `## 목차` — document map (first H2 after `#` title)
+2. `## 이 문서 읽는 법` — reader path table
+
+No prose between `#` title and `## 목차`.
+
 ## Ch.1 서문
 
-**Order (scan-first, then story):**
+- **Opening paragraph** (no subsection title): 3–5 sentences before `### Goals / Non-Goals`
+- **Do not use** `### TL;DR`, `### 목차`, or `### 이 문서 읽는 법` inside Ch.1
 
-1. `### 목차` — full document map (first `###` in Ch.1)
-2. `### 이 문서 읽는 법` — reader path table
-3. **Opening paragraph** (no subsection title): 3–5 sentences — scope, outcome, rollout hint
-4. `### Goals / Non-Goals`
+Opening must lead into Ch.2.
 
-No prose before `### 목차`. Opening must lead into Ch.2. **Do not use** `### TL;DR`.
+## Paragraph breaks (Ch.2–4)
+
+- **2–4 paragraphs** per chapter, separated by one blank line
+- **1–4 sentences** per paragraph (split before a fifth sentence in the same block)
+- Enforced by `--narrative` (`ch234-paragraph-runon`, `ch234-paragraph-sparse`)
+
+## Flow diagrams (`--narrative`)
+
+| Location | Diagram |
+|----------|---------|
+| Ch.4 (before `### 결정 요약`) | as-is → gap → to-be transition |
+| Ch.5 `### 아키텍처 개요` | component box diagram (strict too) |
+| Ch.5 `### 데이터 흐름` | sequence or flow mermaid |
+| Ch.6 `### 핵심 처리 흐름` | flowchart with ≥2 error branches |
 
 ## Design Alternatives — When Multiple Options Exist
 

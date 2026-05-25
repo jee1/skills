@@ -87,12 +87,19 @@ HANNUINE_HEADER = re.compile(r"^####\s+한눈에", re.M)
 CH1_GOALS = re.compile(r"^###\s+Goals\s*/\s*Non-Goals", re.M)
 CH1_READER = re.compile(r"^###\s+이\s+문서\s+읽는\s+법", re.M)
 CH1_TOC = re.compile(r"^###\s+목차", re.M)
+FM_TOC = re.compile(r"^##\s+목차\s*$", re.M)
+FM_READER = re.compile(r"^##\s+이\s+문서\s+읽는\s+법\s*$", re.M)
+FM_CH1 = re.compile(r"^##\s+1\.\s+서문\s*$", re.M)
+DOC_TITLE = re.compile(r"^#\s+.+", re.M)
 CH4_SUMMARY = re.compile(r"^###\s+결정\s+요약", re.M)
 SASIL_BLOCK = re.compile(r"^\s*>\s*\*\*사실:\*\*", re.M)
 APPENDIX_A_ID = re.compile(r"^\|\s*(A-\d+)\s*\|", re.M)
 
 MIN_CH234_SENTENCES = 8
+MIN_CH234_PARAGRAPHS = 2
+RUNON_PARAGRAPH_SENTENCES = 5
 MIN_CH1_OPENING_SENTENCES = 3
+MIN_FLOW_BRANCH_SIGNALS = 2
 MIN_DOC_SENTENCES = 40
 MIN_CH5_LEAD_SENTENCES = 2
 MIN_CH6_LEAD_SENTENCES = 1
@@ -271,6 +278,131 @@ def _prose_char_count(text: str) -> int:
 
 def _significant_tokens(sentence: str) -> set[str]:
     return {w.lower() for w in re.findall(r"[\w가-힣]{3,}", sentence)}
+
+
+def _body_after_doc_title(body: str) -> str:
+    match = DOC_TITLE.search(body)
+    if not match:
+        return body.lstrip()
+    return body[match.end() :].lstrip("\n")
+
+
+def _prose_paragraphs(chapter_text: str) -> list[str]:
+    cleaned = _strip_structural_content(chapter_text).strip()
+    if not cleaned:
+        return []
+    return [
+        part.strip()
+        for part in re.split(r"\n\s*\n+", cleaned)
+        if part.strip() and _count_sentences(part.strip()) >= 1
+    ]
+
+
+def _ch4_before_summary(ch4: str) -> str:
+    summary = CH4_SUMMARY.search(ch4)
+    if summary:
+        return ch4[: summary.start()]
+    return ch4
+
+
+def _mermaid_branch_signals(mermaid_body: str) -> int:
+    signals = 0
+    if re.search(r"\|yes\||\|no\||\|Yes\||\|No\|", mermaid_body):
+        signals += 2
+    if re.search(r"\balt\b|\belse\b", mermaid_body, re.I):
+        signals += 2
+    if len(re.findall(r"-->\|", mermaid_body)) >= 2:
+        signals += 2
+    elif len(re.findall(r"-->", mermaid_body)) >= 3:
+        signals += 1
+    return signals
+
+
+def check_front_matter(body: str) -> list[ValidationError]:
+    """H2 front matter before ## 1. 서문; Ch.1 opening + Goals only."""
+    errors: list[ValidationError] = []
+    after_title = _body_after_doc_title(body)
+    toc_m = FM_TOC.search(after_title)
+    reader_m = FM_READER.search(after_title)
+    ch1_m = FM_CH1.search(after_title)
+
+    for pattern, code, label in (
+        (FM_TOC, "frontmatter-toc-missing", "## 목차"),
+        (FM_READER, "frontmatter-reader-missing", "## 이 문서 읽는 법"),
+        (FM_CH1, "frontmatter-ch1-missing", "## 1. 서문"),
+    ):
+        if not pattern.search(after_title):
+            errors.append(ValidationError(0, code, f"Missing {label} (H2 front matter before numbered chapters)"))
+
+    if toc_m and reader_m and ch1_m:
+        if not (toc_m.start() < reader_m.start() < ch1_m.start()):
+            errors.append(
+                ValidationError(
+                    0,
+                    "frontmatter-order",
+                    "Front matter order must be: ## 목차 → ## 이 문서 읽는 법 → ## 1. 서문",
+                )
+            )
+        if after_title[: toc_m.start()].strip():
+            errors.append(
+                ValidationError(
+                    0,
+                    "frontmatter-content-before-toc",
+                    "No content allowed between document # title and ## 목차",
+                )
+            )
+
+    ch1 = _chapter_slice(body, r"^##\s+1\.\s+서문", r"^##\s+2\.\s+")
+    if ch1:
+        if CH1_TOC.search(ch1) or CH1_READER.search(ch1):
+            errors.append(
+                ValidationError(
+                    0,
+                    "ch1-nested-frontmatter",
+                    "Move ### 목차 / ### 이 문서 읽는 법 to H2 ## sections before ## 1. 서문",
+                )
+            )
+        goals_m = CH1_GOALS.search(ch1)
+        if not goals_m:
+            errors.append(ValidationError(0, "ch1-goals-missing", "Ch.1 missing ### Goals / Non-Goals"))
+        else:
+            opening = ch1[: goals_m.start()]
+            opening = re.sub(r"^##\s+1\.\s+서문\s*", "", opening, count=1, flags=re.M).strip()
+            if _count_sentences(opening) < MIN_CH1_OPENING_SENTENCES:
+                errors.append(
+                    ValidationError(
+                        0,
+                        "ch1-opening-thin",
+                        f"Ch.1 needs ≥{MIN_CH1_OPENING_SENTENCES} opening sentences before ### Goals / Non-Goals",
+                    )
+                )
+    return errors
+
+
+def _check_ch234_paragraphs(chapter: str, chapter_num: int) -> list[ValidationError]:
+    errors: list[ValidationError] = []
+    if not chapter:
+        return errors
+    paragraphs = _prose_paragraphs(chapter)
+    if len(paragraphs) < MIN_CH234_PARAGRAPHS:
+        errors.append(
+            ValidationError(
+                0,
+                "ch234-paragraph-sparse",
+                f"Ch.{chapter_num} needs ≥{MIN_CH234_PARAGRAPHS} prose paragraphs separated by blank lines (found {len(paragraphs)})",
+            )
+        )
+    for idx, paragraph in enumerate(paragraphs, start=1):
+        sent_count = _count_sentences(paragraph)
+        if sent_count >= RUNON_PARAGRAPH_SENTENCES:
+            errors.append(
+                ValidationError(
+                    0,
+                    "ch234-paragraph-runon",
+                    f"Ch.{chapter_num} paragraph {idx} has {sent_count} sentences (max {RUNON_PARAGRAPH_SENTENCES - 1} recommended; split with blank line)",
+                )
+            )
+    return errors
 
 
 def _chapter_bridge_ok(prev_chapter: str, next_chapter: str) -> bool:
@@ -671,56 +803,6 @@ def check_narrative(body: str) -> list[ValidationError]:
                 ValidationError(0, code, f"Forbidden meta-label in Ch.2–7: {code}")
             )
 
-    if ch1:
-        toc_m = CH1_TOC.search(ch1)
-        reader_m = CH1_READER.search(ch1)
-        goals_m = CH1_GOALS.search(ch1)
-        for pattern, code, label in (
-            (CH1_TOC, "ch1-toc-missing", "### 목차"),
-            (CH1_READER, "ch1-reader-missing", "### 이 문서 읽는 법"),
-            (CH1_GOALS, "ch1-goals-missing", "### Goals / Non-Goals"),
-        ):
-            if not pattern.search(ch1):
-                errors.append(ValidationError(0, code, f"Ch.1 missing {label}"))
-        if toc_m and reader_m and goals_m:
-            if not (toc_m.start() < reader_m.start() < goals_m.start()):
-                errors.append(
-                    ValidationError(
-                        0,
-                        "ch1-section-order",
-                        "Ch.1 order must be: ### 목차 → ### 이 문서 읽는 법 → opening → ### Goals / Non-Goals",
-                    )
-                )
-            first_sub = re.search(r"^###\s+", ch1, re.M)
-            if first_sub and first_sub.start() != toc_m.start():
-                errors.append(
-                    ValidationError(
-                        0,
-                        "ch1-toc-not-first",
-                        "Ch.1 ### 목차 must be the first ### subsection (scan-first navigation)",
-                    )
-                )
-            pre_toc = ch1[: toc_m.start()]
-            pre_toc = re.sub(r"^##\s+1\.\s+서문\s*", "", pre_toc, count=1, flags=re.M).strip()
-            if pre_toc:
-                errors.append(
-                    ValidationError(
-                        0,
-                        "ch1-content-before-toc",
-                        "Ch.1 must start with ### 목차 immediately after ## 1. 서문 (no prose before TOC)",
-                    )
-                )
-            opening = ch1[reader_m.end() : goals_m.start()]
-            if _count_sentences(opening) < MIN_CH1_OPENING_SENTENCES:
-                errors.append(
-                    ValidationError(
-                        0,
-                        "ch1-opening-thin",
-                        f"Ch.1 needs ≥{MIN_CH1_OPENING_SENTENCES} opening sentences "
-                        "between ### 이 문서 읽는 법 and ### Goals / Non-Goals (no TL;DR section)",
-                    )
-                )
-
     for num, chapter, code in (
         (2, ch2, "ch2-min-sentences"),
         (3, ch3, "ch3-min-sentences"),
@@ -736,6 +818,11 @@ def check_narrative(body: str) -> list[ValidationError]:
                 )
             )
 
+    for num, chapter in ((2, ch2), (3, ch3)):
+        errors.extend(_check_ch234_paragraphs(chapter, num))
+    if ch4:
+        errors.extend(_check_ch234_paragraphs(_ch4_before_summary(ch4), 4))
+
     if ch2 and ch3 and not _chapter_bridge_ok(ch2, ch3):
         errors.append(ValidationError(0, "ch-bridge-2-3", "Weak narrative bridge between Ch.2 and Ch.3"))
     if ch3 and ch4 and not _chapter_bridge_ok(ch3, ch4):
@@ -744,6 +831,15 @@ def check_narrative(body: str) -> list[ValidationError]:
         errors.append(ValidationError(0, "ch-bridge-4-5", "Weak narrative bridge between Ch.4 and Ch.5"))
 
     if ch4:
+        ch4_prose = _ch4_before_summary(ch4)
+        if ch4_prose and not MERMAID_FENCE.search(ch4_prose):
+            errors.append(
+                ValidationError(
+                    0,
+                    "ch4-transition-diagram-missing",
+                    "Ch.4 needs ```mermaid transition diagram before ### 결정 요약",
+                )
+            )
         if not CH4_SUMMARY.search(ch4):
             errors.append(ValidationError(0, "ch4-summary-missing", "Ch.4 missing ### 결정 요약"))
         else:
@@ -776,6 +872,15 @@ def check_narrative(body: str) -> list[ValidationError]:
                         f"Ch.5 ### {label} needs ≥{min_lead} lead sentences before structure (found {lead_count})",
                     )
                 )
+        _, flow_sec = _subsection_content(ch5, r"###\s+데이터\s+흐름")
+        if flow_sec and not MERMAID_FENCE.search(flow_sec):
+            errors.append(
+                ValidationError(
+                    0,
+                    "ch5-flow-diagram-missing",
+                    "Ch.5 ### 데이터 흐름 needs ```mermaid sequence or flow diagram",
+                )
+            )
 
     if ch6:
         for pattern, label in (
@@ -795,6 +900,27 @@ def check_narrative(body: str) -> list[ValidationError]:
                         f"Ch.6 ### {label} needs ≥{MIN_CH6_LEAD_SENTENCES} lead sentence before tables (found {lead_count})",
                     )
                 )
+        _, proc_sec = _subsection_content(ch6, r"###\s+핵심\s+처리\s+흐름")
+        if proc_sec:
+            if not MERMAID_FENCE.search(proc_sec):
+                errors.append(
+                    ValidationError(
+                        0,
+                        "ch6-flow-diagram-missing",
+                        "Ch.6 ### 핵심 처리 흐름 needs ```mermaid flow diagram",
+                    )
+                )
+            else:
+                for match in MERMAID_FENCE.finditer(proc_sec):
+                    if _mermaid_branch_signals(match.group(0)) < MIN_FLOW_BRANCH_SIGNALS:
+                        errors.append(
+                            ValidationError(
+                                0,
+                                "ch6-flow-branches-weak",
+                                "Ch.6 flow mermaid needs ≥2 branch signals (decision edges, |yes|/|no|, or alt/else)",
+                            )
+                        )
+                        break
 
     doc_sentences = _count_sentences(_body_before_appendices(body))
     if doc_sentences < MIN_DOC_SENTENCES:
@@ -831,8 +957,11 @@ def validate(path: Path, *, strict: bool = True, narrative: bool = False, readab
     errors.extend(check_tier1_decisions(body, mode))
     errors.extend(check_pending_open_questions(body))
     if strict:
+        errors.extend(check_front_matter(body))
         errors.extend(check_design_depth(body, mode))
     if narrative:
+        if not strict:
+            errors.extend(check_front_matter(body))
         errors.extend(check_narrative(body))
 
     return errors

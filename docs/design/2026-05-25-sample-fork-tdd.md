@@ -10,9 +10,7 @@ review_rounds: 0
 
 # Fork Sample — Technical Design Document
 
-## 1. 서문
-
-### 목차
+## 목차
 
 1. [서문](#1-서문)
 2. [배경과 문제](#2-배경과-문제)
@@ -24,13 +22,15 @@ review_rounds: 0
 - [부록 A. 출처·코드 위치](#부록-a-출처코드-위치)
 - [부록 B. Ch.4 결정 전문](#부록-b-ch4-결정-전문)
 
-### 이 문서 읽는 법
+## 이 문서 읽는 법
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | Ch.1 opening + Goals → [§5](#5-상위설계) mermaid | ~3분 |
+| PM | ## 1. 서문 opening + Goals → [§5](#5-상위설계) mermaid | ~3분 |
 | Dev | [§4](#4-설계-결정) 결정 요약 → [§6](#6-상세설계) 스펙 표 | ~5분 |
 | 감사 | [§4](#4-설계-결정) 갈림 block → [부록 A](#부록-a-출처코드-위치) | ~3분 |
+
+## 1. 서문
 
 이 문서는 greenfield items CRUD API의 기술 설계를 PM, 백엔드 개발자, 감사 담당자가 공유하기 위해 작성한다. PRD는 cross-entity 트랜잭션이 가능한 primary datastore와 REST CRUD를 요구한다. PostgreSQL과 MongoDB 사이의 datastore 갈림이 남아 있으며, 본문은 PostgreSQL 권장 경로를 기준으로 서술한다. 최종 datastore 선택은 Ch.7 열린 질문에서 확정한다. v1은 internal network 전용이며 public auth는 범위 밖이다.
 
@@ -47,15 +47,33 @@ review_rounds: 0
 
 ## 2. 배경과 문제
 
-PRD는 items 엔티티에 대한 REST CRUD API와 영속 저장소를 요구한다. 모든 write는 cross-entity 트랜잭션 경계 안에서 일관되게 커밋되어야 한다. 동일 sku 중복 생성과 부분 실패 rollback은 운영에서 반드시 막아야 하는 실패 모드이다. 대상 스택은 Node 20과 TypeScript이며, 배포 환경은 Kubernetes liveness probe를 전제로 한다. v1 범위는 internal network에서 Bearer 인증 없이 호출 가능한 API로 한정한다. message queue나 event bus는 이번 릴리스 Non-Goal이다. health endpoint는 프로브 실패 시 트래픽 차단을 위해 필수이다. 이 요구는 relational ACID 또는 동등한 트랜잭션 보장을 갖는 datastore 선택으로 이어진다.
+PRD는 items 엔티티에 대한 REST CRUD API와 영속 저장소를 요구한다. 모든 write는 cross-entity 트랜잭션 경계 안에서 일관되게 커밋되어야 한다. 동일 sku 중복 생성과 부분 실패 rollback은 운영에서 반드시 막아야 하는 실패 모드이다. 대상 스택은 Node 20과 TypeScript이며, 배포 환경은 Kubernetes liveness probe를 전제로 한다.
+
+v1 범위는 internal network에서 Bearer 인증 없이 호출 가능한 API로 한정한다. message queue나 event bus는 이번 릴리스 Non-Goal이다. health endpoint는 프로브 실패 시 트래픽 차단을 위해 필수이다.
+
+이 요구는 relational ACID 또는 동등한 트랜잭션 보장을 갖는 datastore 선택으로 이어진다.
 
 ## 3. 시작점
 
-PRD가 요구하는 items CRUD와 트랜잭션 일관성을 구현할 도메인 코드는 아직 존재하지 않는다. 저장소에는 Node 20과 TypeScript 보일러플레이트만 있으며, `package.json`에 express 4.x와 typescript가 선언되어 있다. `src/` 디렉터리는 비어 있어 HTTP handler, repository, schema migration 코드가 모두 미구현 상태이다. 런타임 의존성은 express 4.x 하나이며 DB driver나 ORM은 아직 추가되지 않았다 [ref:A-1]. CI는 lint와 typecheck만 실행하며 integration test harness도 없다. express boilerplate만으로는 PRD items CRUD를 충족할 수 없다. 따라서 datastore, API contract, migration 순서를 Ch.4에서 먼저 확정해야 구현 착수가 가능하다. greenfield 전제 하에서 Ch.5·6는 신규 **ApiServer**, **ItemRepository**, **PostgreSQL** 조합을 가정한다.
+PRD가 요구하는 items CRUD와 트랜잭션 일관성을 구현할 도메인 코드는 아직 존재하지 않는다. 저장소에는 Node 20과 TypeScript 보일러플레이트만 있으며, `package.json`에 express 4.x와 typescript가 선언되어 있다. `src/` 디렉터리는 비어 있어 HTTP handler, repository, schema migration 코드가 모두 미구현 상태이다.
+
+런타임 의존성은 express 4.x 하나이며 DB driver나 ORM은 아직 추가되지 않았다 [ref:A-1]. CI는 lint와 typecheck만 실행하며 integration test harness도 없다. express boilerplate만으로는 PRD items CRUD를 충족할 수 없다.
+
+따라서 datastore, API contract, migration 순서를 Ch.4에서 먼저 확정해야 구현 착수가 가능하다. greenfield 전제 하에서 Ch.5·6는 신규 **ApiServer**, **ItemRepository**, **PostgreSQL** 조합을 가정한다.
 
 ## 4. 설계 결정
 
-미구현 DB layer와 PRD cross-entity transaction 요구 때문에 primary datastore 선택이 첫 번째 설계 갈림이다. PRD cross-entity transaction 요구는 단일 DB transaction으로 item write를 묶을 수 있는 relational store에 유리하다. MongoDB는 스키마 유연성은 높지만 multi-document ACID는 운영 복잡도와 버전 제약이 따른다. PostgreSQL은 ACID transaction과 UNIQUE constraint를 SQL 표준으로 제공한다. v1은 단일 **ApiServer** 프로세스와 단일 PostgreSQL instance로 수평 복잡도를 낮춘다. 인증·메시징은 Non-Goal이므로 datastore 결정이 아키텍처 형태를 좌우한다. 본 문서는 PostgreSQL 권장 경로로 Ch.5·6를 전개하되, 상태는 권장(미확정)으로 둔다. 확정 전까지 Ch.7 열린 질문에 MongoDB 대안 검토 항목을 유지한다.
+미구현 DB layer와 PRD cross-entity transaction 요구 때문에 primary datastore 선택이 첫 번째 설계 갈림이다. PRD cross-entity transaction 요구는 단일 DB transaction으로 item write를 묶을 수 있는 relational store에 유리하다. MongoDB는 스키마 유연성은 높지만 multi-document ACID는 운영 복잡도와 버전 제약이 따른다.
+
+PostgreSQL은 ACID transaction과 UNIQUE constraint를 SQL 표준으로 제공한다. v1은 단일 **ApiServer** 프로세스와 단일 PostgreSQL instance로 수평 복잡도를 낮춘다. 인증·메시징은 Non-Goal이므로 datastore 결정이 아키텍처 형태를 좌우한다.
+
+본 문서는 PostgreSQL 권장 경로로 Ch.5·6를 전개하되, 상태는 권장(미확정)으로 둔다. 확정 전까지 Ch.7 열린 질문에 MongoDB 대안 검토 항목을 유지한다.
+
+```mermaid
+flowchart LR
+  Empty[No domain code] --> Fork[PostgreSQL vs MongoDB]
+  Fork --> Rec[PostgreSQL recommended path]
+```
 
 ### 결정 요약
 
@@ -96,6 +114,14 @@ flowchart LR
 ### 데이터 흐름
 
 Client CRUD 요청은 **ApiServer** → **ItemRepository** → **PostgreSQL** 순으로 동기 처리된다. validation 실패는 DB 호출 전에 400으로 종료하고, sku UNIQUE violation은 409로 매핑한다. 모든 successful write path는 단일 DB transaction으로 commit된다 [ref:A-4].
+
+```mermaid
+sequenceDiagram
+  Client->>ApiServer: POST /items
+  ApiServer->>ItemRepository: insert
+  ItemRepository->>PostgreSQL: SQL in transaction
+  ApiServer->>Client: 201 Created
+```
 
 1. Client → **ApiServer**: HTTP request + JSON body
 2. **ApiServer**: validate payload, map to domain call
@@ -150,6 +176,15 @@ items REST API는 v1 internal network 전용이며 Bearer 인증을 요구하지
 ### 핵심 처리 흐름
 
 **ApiServer** create item flow는 validation → **ItemRepository**.insert → commit 순서를 따른다. DB constraint error는 HTTP semantics에 맞게 매핑하고 transaction rollback으로 partial write를 방지한다 [ref:A-7].
+
+```mermaid
+flowchart TD
+  Start[POST /items] --> Valid{valid body?}
+  Valid -->|no| E400[400 VALIDATION_ERROR]
+  Valid -->|yes| Insert[ItemRepository.insert]
+  Insert -->|23505| E409[409 DUPLICATE_SKU]
+  Insert -->|ok| Done[201 Created]
+```
 
 **Happy path:** **ApiServer** validates POST body → **ItemRepository**.insert → commit → 201.
 

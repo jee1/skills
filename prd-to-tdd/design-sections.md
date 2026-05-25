@@ -163,11 +163,11 @@ See [examples.md](examples.md) § Ch.5–6 depth for full good/bad excerpts.
 
 | Area | Rule |
 |------|------|
-| Ch.1 | `### 목차` → `### 이 문서 읽는 법` → opening ≥3 sentences → `### Goals / Non-Goals` (no `### TL;DR`) |
-| Ch.2–4 | Each ≥8 sentences; bridges Ch.2→3, 3→4, 4→5 |
-| Ch.4 | `### 결정 요약` table ≥1 data row |
-| Ch.5 | mermaid in ### 아키텍처 개요; ≥2 lead sentences per ### |
-| Ch.6 | ≥1 lead sentence per ### before tables |
+| Ch.1 | `## 목차` → `## 이 문서 읽는 법` → opening ≥3 sentences → `### Goals / Non-Goals` |
+| Ch.2–4 | Each ≥8 sentences; **2–4 paragraphs** (blank lines); bridges Ch.2→3, 3→4, 4→5 |
+| Ch.4 | ` ```mermaid ` transition before `### 결정 요약`; summary table ≥1 row |
+| Ch.5 | mermaid in ### 아키텍처 개요 + ### 데이터 흐름; ≥2 lead sentences per ### |
+| Ch.6 | mermaid in ### 핵심 처리 흐름 (branching); ≥1 lead sentence per ### |
 | Ch.2–7 | No `요약:`, `#### 한눈에`, 6하 labels |
 | Doc | ≥40 non-table sentences total |
 | Ch.5–6 | No `> **사실:**`; use `[ref:A-n]` |

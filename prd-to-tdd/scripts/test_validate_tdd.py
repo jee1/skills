@@ -25,20 +25,20 @@ review_rounds: 0
 """
 
 MINIMAL_NARRATIVE_BODY = """
-## 1. 서문
-
-### 목차
+## 목차
 
 1. [서문](#1-서문)
 2. [배경과 문제](#2-배경과-문제)
 
-### 이 문서 읽는 법
+## 이 문서 읽는 법
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | Ch.1 opening → Ch.5 diagram | ~3분 |
+| PM | ## 1. 서문 opening → Ch.5 diagram | ~3분 |
 | Dev | Ch.4 → Ch.6 tables | ~5분 |
 | Audit | Ch.4 결정 요약 → Appendix A | ~3분 |
+
+## 1. 서문
 
 This document describes the order cancel feature for PM, developers, and audit readers.
 The PRD requires refund orchestration when a paid order is cancelled on the B2C web API.
@@ -61,6 +61,7 @@ Customers on the B2C web shop must cancel orders before and after payment under 
 The product scope is limited to the public order API and excludes marketplace seller tools.
 Operations teams need predictable refund behavior when a paid order moves to cancelled status.
 Support volume spikes when cancel and refund paths disagree with what the PRD promises.
+
 Inventory must return to sellable stock when a line item is released after cancel.
 The PRD document defines cancel-flow steps and inventory restoration as mandatory outcomes.
 This feature affects checkout, order history, and customer service dashboards equally.
@@ -72,6 +73,7 @@ The order service exposes POST /orders/{id}/cancel for authenticated shoppers to
 Cancel currently updates the order row to cancelled without calling any payment gateway module.
 Inventory release is not triggered consistently when status changes on paid orders in production.
 The cancel handler validates JWT bearer tokens and forwards work to OrderService synchronously.
+
 OrderService loads the order entity, rejects duplicate cancel attempts, and persists status only.
 Payment intent identifiers exist on paid orders but no refund API integration is wired yet.
 Operations rely on manual Stripe dashboard refunds when customers complain about stuck paid cancels.
@@ -83,9 +85,16 @@ PRD mandates refund when status is paid, yet code never invokes PaymentGateway.r
 The gap is therefore PRD-only refund orchestration missing from OrderService.cancel implementation.
 We will extend cancel to call Stripe refunds before inventory release for paid orders only.
 Pending orders continue to skip refund and only transition status with inventory release unchanged.
+
 This direction preserves existing auth boundaries and adds a new PaymentGateway adapter module.
 Staging will validate timeout handling before the feature flag enables production traffic.
 Audit readers can trace the refund decision in the summary table and Appendix B block below.
+
+```mermaid
+flowchart LR
+  AsIs[Status-only cancel] --> Gap[Missing refund path]
+  Gap --> ToBe[Orchestrated refund cancel]
+```
 
 ### 결정 요약
 
@@ -132,6 +141,14 @@ InventoryService continues to own stock release semantics defined in the existin
 Paid cancels refund first because PRD cancel-flow orders payment reversal before stock release.
 The synchronous path returns explicit error codes when PG or inventory fails without partial commits.
 Each numbered step below reuses the component names introduced in the responsibility subsection above.
+
+```mermaid
+sequenceDiagram
+  Client->>CancelHandler: POST cancel
+  CancelHandler->>OrderService: cancel(orderId)
+  OrderService->>PaymentGateway: refund if paid
+  OrderService->>InventoryService: release
+```
 
 1. Client calls CancelHandler with JWT and optional Idempotency-Key
 2. CancelHandler invokes OrderService.cancel for the order id
@@ -184,6 +201,17 @@ Migration V004 adds cancelled_at without rewriting historical status values for 
 ### 핵심 처리 흐름
 
 OrderService.cancel loads the order, rejects already cancelled rows, then runs refund and inventory branches.
+
+```mermaid
+flowchart TD
+  Start[Load order] --> Paid{status paid?}
+  Paid -->|yes| Refund[PaymentGateway.refund]
+  Paid -->|no| Inv[InventoryService.release]
+  Refund -->|timeout| E502[502 PAYMENT_TIMEOUT]
+  Refund --> Inv
+  Inv -->|fail| E500[500 INVENTORY_RELEASE_FAILED]
+  Inv --> Done[Persist cancelled]
+```
 
 **Happy path:** OrderService loads order → rejects cancelled → PaymentGateway.refund if paid → InventoryService.release → persist cancelled.
 
@@ -265,21 +293,10 @@ class TestNarrativeProfile(unittest.TestCase):
         finally:
             path.unlink()
 
-    def test_ch1_legacy_order_fails_narrative(self):
+    def test_ch1_nested_frontmatter_fails(self):
         legacy = MINIMAL_NARRATIVE_BODY.replace(
-            "## 1. 서문\n\n### 목차",
-            "## 1. 서문\n\nThis document describes the order cancel feature for PM, developers, and audit readers.\n"
-            "The PRD requires refund orchestration when a paid order is cancelled on the B2C web API.\n"
-            "We will roll out behind a feature flag after staging validation completes successfully.\n\n"
-            "### Goals / Non-Goals\n\n**Goals:**\n- Provide cancel API with refund\n\n**Non-Goals:**\n- Bulk admin cancel\n\n"
-            "### 이 문서 읽는 법\n\n| 독자 | 먼저 볼 곳 | 목표 |\n| PM | Ch.5 | ~3분 |\n\n### 목차",
-            1,
-        ).replace(
-            "This document describes the order cancel feature for PM, developers, and audit readers.\n"
-            "The PRD requires refund orchestration when a paid order is cancelled on the B2C web API.\n"
-            "We will roll out behind a feature flag after staging validation completes successfully.\n\n"
-            "### Goals / Non-Goals",
-            "### Goals / Non-Goals",
+            "## 1. 서문\n\nThis document",
+            "## 1. 서문\n\n### 목차\n\n1. bad\n\nThis document",
             1,
         )
         doc = FRONTMATTER + legacy
@@ -287,9 +304,9 @@ class TestNarrativeProfile(unittest.TestCase):
             f.write(doc)
             path = Path(f.name)
         try:
-            errors = v.validate(path, strict=False, narrative=True)
+            errors = v.validate(path, strict=True, narrative=True)
             codes = [e.code for e in errors]
-            self.assertIn("ch1-section-order", codes)
+            self.assertIn("ch1-nested-frontmatter", codes)
         finally:
             path.unlink()
 

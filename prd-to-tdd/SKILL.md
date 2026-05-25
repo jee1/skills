@@ -127,11 +127,15 @@ If user defers (“나중에”), keep `> **갈림:**` + `> **상태:** 권장(�
 6. Ch.5 **상위설계**: lead prose (≥2 sentences per ###) then mermaid/lists; ≥2 components; ≥3 flow steps
 7. Ch.6 **상세설계**: lead prose (≥1 sentence per ###) then tables; optional dev index table after chapter intro; ≥2 error branches; Ch.5 names in Ch.6; `[ref:A-n]` not inline blockquotes
 8. Ch.7 **마무리**: rollout, risks table, 열린 질문 (for each Ch.4 `권장(미확정)`)
-9. Ch.1: ### 목차 → ### 이 문서 읽는 법 → opening paragraph (no ### TL;DR) → Goals/Non-Goals
-10. Ch.4: `### 결정 요약` table (only allowed “summary” heading in body)
-11. Ch.5: mermaid in ### 아키텍처 개요 — **no** `요약:` / `#### 한눈에`
-12. Write ## 부록 A and ## 부록 B after Ch.7
-13. Ch.2–4: ≥8 sentences each; embed 6하 in prose; chapter bridges (see narrative-rules.md)
+9. Front matter: `## 목차` → `## 이 문서 읽는 법` → `## 1. 서문` (opening + Goals only)
+10. Ch.2–4: ≥8 sentences each in **2–4 paragraphs** (blank line between paragraphs)
+11. Ch.4: mermaid transition diagram before `### 결정 요약`
+12. Ch.5: mermaid in ### 아키텍처 개요 and ### 데이터 흐름
+13. Ch.6: mermaid flowchart in ### 핵심 처리 흐름 (error branches)
+14. Ch.4: `### 결정 요약` table (only allowed “summary” heading in body)
+15. Ch.5: **no** `요약:` / `#### 한눈에`
+16. Write ## 부록 A and ## 부록 B after Ch.7
+17. Ch.2–4: embed 6하 in prose; chapter bridges (see narrative-rules.md)
 
 Filename: `docs/design/YYYY-MM-DD-<feature_slug>-tdd.md`
 

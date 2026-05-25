@@ -1,6 +1,6 @@
 # TDD Layout, Paragraphs, and Diagrams — Design Spec
 
-**Status:** Draft (awaiting user review)  
+**Status:** Implemented  
 **Date:** 2026-05-25  
 **Scope:** `prd-to-tdd` skill — document structure, paragraph readability, flow diagrams  
 **Builds on:** [2026-05-25-tdd-narrative-profile-design.md](2026-05-25-tdd-narrative-profile-design.md)  

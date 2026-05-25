@@ -57,10 +57,12 @@ Checklist:
 15. Ch.6 ### 핵심 처리 흐름 has ≥2 error/retry branches (not happy-path only).
 16. Every Ch.5 component **Name** appears in Ch.6; no field-level detail in Ch.5; no new Ch.6 component absent from Ch.5.
 17. Brownfield: each component bullet has (신규) or (기존).
-18. Ch.1 order: ### 목차 → ### 이 문서 읽는 법 → opening (≥3 sentences, no TL;DR) → Goals/Non-Goals.
-19. Ch.2–4 each ≥8 prose sentences; bridges Ch.2→3, 3→4, 4→5 feel causal when read in order.
-20. Ch.4 has ### 결정 요약 table aligned with blockquotes.
-21. Ch.5 ### 아키텍처 개요 contains ```mermaid`; each Ch.5 ### has ≥2 lead sentences before structure.
+18. Front matter H2: ## 목차 → ## 이 문서 읽는 법 → ## 1. 서문 (opening + Goals; no ### 목차 in Ch.1).
+19. Ch.2–4 each ≥8 prose sentences in ≥2 paragraphs (blank lines between paragraphs).
+20. Ch.4 mermaid transition before ### 결정 요약; Ch.5 data-flow mermaid; Ch.6 flow mermaid with branches.
+21. Ch.2–4 bridges Ch.2→3, 3→4, 4→5 feel causal when read in order.
+22. Ch.4 has ### 결정 요약 table aligned with blockquotes.
+23. Ch.5 ### 아키텍처 개요 contains ```mermaid`; each Ch.5 ### has ≥2 lead sentences before structure.
 22. Ch.6 each ### has ≥1 lead sentence before tables; no > **사실:** in Ch.5–6; Tier-2 uses [ref:A-n]; Appendix A/B complete.
 23. Qualitative: reads like one story front-to-back; no telegraphic fragments a new teammate could not follow.
 

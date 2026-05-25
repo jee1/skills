@@ -358,3 +358,138 @@ CancelHandler는 Bearer JWT를 검증한 뒤 OrderService.cancel에 위임한다
 ```
 
 **Violations:** `요약:` / `#### 한눈에`; Ch.2 telegraphic; no chapter bridges; `<8` sentences in Ch.2–4.
+
+---
+
+## Front matter — Good (H2 before Ch.1)
+
+```markdown
+# 주문 취소 API 기술설계서
+
+## 목차
+
+1. 서문 …
+2. 배경과 문제 …
+
+## 이 문서 읽는 법
+
+- PM: Ch.2–4, Ch.4 `### 결정 요약`
+- Dev: Ch.5–6, 부록 A
+
+## 1. 서문
+
+고객은 결제 전후 특정 조건에서 주문을 취소할 수 있어야 한다.
+…（opening ≥3 sentences）
+
+### Goals
+…
+```
+
+**Why good:** `## 목차` → `## 이 문서 읽는 법` → `## 1. 서문`; no prose before `## 목차`; Ch.1 has opening + Goals only.
+
+---
+
+## Front matter — Bad (nested under Ch.1)
+
+```markdown
+## 1. 서문
+
+### 목차
+…
+
+### 이 문서 읽는 법
+…
+
+고객은 …
+```
+
+**Violations:** TOC/reader paths inside Ch.1 as `###`; scan-first blocks buried under 서문.
+
+---
+
+## Ch.2–4 paragraphs — Good
+
+```markdown
+## 2. 배경과 문제
+
+고객은 B2C 웹몰에서 결제 전후 주문을 취소할 수 있어야 한다. PRD는 취소 시 재고 복구와 paid 상태 환불을 동시에 요구한다.
+
+현재 API는 status만 `cancelled`로 바꾸며 환불·재고 연동이 없다. 운영팀은 수동 환불 티켓으로 처리하고 있어 SLA를 맞추기 어렵다.
+
+범위는 공개 주문 API이며 B2B bulk cancel은 포함하지 않는다. …（≥8 sentences total, 2–4 paragraphs, blank lines between）
+```
+
+**Why good:** 2–4 paragraphs; blank lines; no run-on wall (≥5 sentences in one paragraph).
+
+---
+
+## Ch.2–4 paragraphs — Bad (run-on)
+
+```markdown
+## 2. 배경과 문제
+
+고객은 취소가 필요하다. PRD는 환불을 요구한다. 현재는 status만 바꾼다. 운영은 수동이다. 범위는 B2C이다. B2B는 제외이다. …（한 단락에 5문장 이상）
+```
+
+**Violation:** `ch234-paragraph-runon` under `--narrative`.
+
+---
+
+## Flow diagrams — Good (four locations)
+
+```markdown
+## 4. 갭과 설계 전환
+
+…（prose）
+
+```mermaid
+flowchart LR
+  AsIs[status only] --> ToBe[refund + inventory]
+```
+
+### 결정 요약
+| … |
+
+## 5. 상위설계
+
+### 아키텍처 개요
+… + ```mermaid flowchart …```
+
+### 데이터 흐름
+… + ```mermaid sequenceDiagram …```
+
+## 6. 상세설계
+
+### 핵심 처리 흐름
+
+```mermaid
+flowchart TD
+  Start --> Validate
+  Validate -->|paid| Refund
+  Validate -->|error| Fail
+```
+
+**Why good:** Ch.4 transition before `### 결정 요약`; Ch.5 arch + data flow; Ch.6 flow with error branch.
+
+---
+
+## Flow diagrams — Bad
+
+```markdown
+## 4. 갭과 설계 전환
+
+### 결정 요약
+（mermaid 없음）
+
+## 5. 상위설계
+
+### 아키텍처 개요
+단일 API + DB.（mermaid 없음 — strict도 실패）
+
+## 6. 상세설계
+
+### 핵심 처리 흐름
+Happy path only, no mermaid.
+```
+
+**Violations:** missing required mermaid blocks; Ch.6 no error branch in diagram.

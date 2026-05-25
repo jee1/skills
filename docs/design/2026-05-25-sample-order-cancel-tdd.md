@@ -10,9 +10,7 @@ review_rounds: 0
 
 # 주문 취소 API — Technical Design Document
 
-## 1. 서문
-
-### 목차
+## 목차
 
 1. [서문](#1-서문)
 2. [배경과 문제](#2-배경과-문제)
@@ -24,13 +22,15 @@ review_rounds: 0
 - [부록 A. 출처·코드 위치](#부록-a-출처코드-위치)
 - [부록 B. Ch.4 결정 전문](#부록-b-ch4-결정-전문)
 
-### 이 문서 읽는 법
+## 이 문서 읽는 법
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | Ch.1 opening + Goals → [§5](#5-상위설계) diagram | ~3분 |
+| PM | ## 1. 서문 opening + Goals → [§5](#5-상위설계) diagram | ~3분 |
 | Dev | [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) dev index + tables | ~5분 |
 | 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | ~3분 |
+
+## 1. 서문
 
 이 문서는 B2C 웹 주문 API에 주문 취소 기능을 추가하기 위한 기술 설계서이다. PM, 백엔드 개발자, 감사 담당자가 동일한 사실을 공유하도록 PRD `docs/prd/order-cancel.md`를 2026-05-25 기준으로 반영한다. paid 상태 취소 시 Stripe 환불과 재고 복구가 함께 일어나야 하며, Idempotency-Key로 중복 취소를 안전하게 처리한다. Staging에서 1주 검증 후 feature flag `cancel_refund_enabled`로 production에 점진 롤아웃한다.
 
@@ -47,15 +47,33 @@ review_rounds: 0
 
 ## 2. 배경과 문제
 
-B2C 웹 쇼핑몰 고객은 결제 완료 전·후 특정 조건에서 주문을 스스로 취소할 수 있어야 한다. PRD는 pending과 paid 상태에서 취소를 허용하며, 취소 시 line item 기준 재고 복구를 요구한다. paid 상태에서는 결제 금액 전액 환불이 선행되어야 하고, 환불 실패 시 주문 상태는 변경되지 않아야 한다. 범위는 B2C 웹 주문 API이며 B2B·관리자 bulk cancel은 이번 릴리스에서 제외한다 [ref:A-1]. 고객 지원팀은 취소 API 응답만으로 주문·환불·재고 상태를 설명할 수 있어야 한다. 동일 Idempotency-Key로 재시도해도 중복 환불이 발생하지 않아야 한다. PRD cancel-flow는 paid 취소 시 환불 후 재고 복구 순서를 명시한다. 이러한 요구는 OrderService와 PaymentGateway, InventoryService 간 orchestration을 필요로 한다.
+B2C 웹 쇼핑몰 고객은 결제 완료 전·후 특정 조건에서 주문을 스스로 취소할 수 있어야 한다. PRD는 pending과 paid 상태에서 취소를 허용하며, 취소 시 line item 기준 재고 복구를 요구한다. paid 상태에서는 결제 금액 전액 환불이 선행되어야 하고, 환불 실패 시 주문 상태는 변경되지 않아야 한다. 범위는 B2C 웹 주문 API이며 B2B·관리자 bulk cancel은 이번 릴리스에서 제외한다 [ref:A-1].
+
+고객 지원팀은 취소 API 응답만으로 주문·환불·재고 상태를 설명할 수 있어야 한다. 동일 Idempotency-Key로 재시도해도 중복 환불이 발생하지 않아야 한다. PRD cancel-flow는 paid 취소 시 환불 후 재고 복구 순서를 명시한다.
+
+이러한 요구는 OrderService와 PaymentGateway, InventoryService 간 orchestration을 필요로 한다.
 
 ## 3. 현재 시스템
 
-현재 B2C 주문 API는 `POST /orders/{id}/cancel` endpoint를 제공한다. CancelHandler가 JWT 인증 후 OrderService.cancel에 위임한다. OrderService는 주문 status를 cancelled로 변경하고 cancelled_at을 기록한다. PaymentGateway 연동은 없으며 paid 주문 취소 시 Stripe 환불은 발생하지 않는다 [ref:A-2]. InventoryService.release 호출도 cancel path에 포함되어 있지 않아 재고는 복구되지 않는다. Idempotency-Key header는 CancelHandler에서 수신하지만 OrderService까지 전달되지 않는다. orders 테이블에는 payment_intent_id 컬럼이 있으나 취소 로직에서 사용되지 않는다. status enum은 pending, paid, shipped, delivered, cancelled 다섯 값으로 정의되어 있다 [ref:A-7]. PRD가 요구하는 paid 취소 시 환불·재고 복구 orchestration은 현재 미구현이다.
+현재 B2C 주문 API는 `POST /orders/{id}/cancel` endpoint를 제공한다. CancelHandler가 JWT 인증 후 OrderService.cancel에 위임한다. OrderService는 주문 status를 cancelled로 변경하고 cancelled_at을 기록한다. PaymentGateway 연동은 없으며 paid 주문 취소 시 Stripe 환불은 발생하지 않는다 [ref:A-2].
+
+InventoryService.release 호출도 cancel path에 포함되어 있지 않아 재고는 복구되지 않는다. Idempotency-Key header는 CancelHandler에서 수신하지만 OrderService까지 전달되지 않는다. orders 테이블에는 payment_intent_id 컬럼이 있으나 취소 로직에서 사용되지 않는다.
+
+status enum은 pending, paid, shipped, delivered, cancelled 다섯 값으로 정의되어 있다 [ref:A-7]. PRD가 요구하는 paid 취소 시 환불·재고 복구 orchestration은 현재 미구현이다.
 
 ## 4. 갭과 설계 전환
 
-PRD는 paid 상태 취소 시 환불을 필수로 요구하지만, 현재 OrderService.cancel은 status 변경만 수행한다. 재고 복구와 Idempotency-Key 전파도 PRD cancel-flow와 일치하지 않는다. 따라서 PaymentGateway.refund 연동과 InventoryService.release 호출을 OrderService orchestration에 추가해야 한다. Stripe refund API는 payment_intent_id 기준이며, timeout 시 retry queue에 job을 적재하는 패턴을 채택한다 [ref:A-3]. PG timeout 시 클라이언트는 동일 Idempotency-Key로 안전하게 재시도할 수 있어야 한다. InventoryService.release 실패 시에는 compensating refund로 데이터 정합성을 유지한다. brownfield 제약 하에 CancelHandler와 OrderService, InventoryService는 기존 모듈을 확장하고 PaymentGateway만 신규 추가한다. Ch.5 상위설계는 이 결정을 API → Service → External 3계층 구조로 구체화한다.
+PRD는 paid 상태 취소 시 환불을 필수로 요구하지만, 현재 OrderService.cancel은 status 변경만 수행한다. 재고 복구와 Idempotency-Key 전파도 PRD cancel-flow와 일치하지 않는다. 따라서 PaymentGateway.refund 연동과 InventoryService.release 호출을 OrderService orchestration에 추가해야 한다.
+
+Stripe refund API는 payment_intent_id 기준이며, timeout 시 retry queue에 job을 적재하는 패턴을 채택한다 [ref:A-3]. PG timeout 시 클라이언트는 동일 Idempotency-Key로 안전하게 재시도할 수 있어야 한다. InventoryService.release 실패 시에는 compensating refund로 데이터 정합성을 유지한다.
+
+brownfield 제약 하에 CancelHandler와 OrderService, InventoryService는 기존 모듈을 확장하고 PaymentGateway만 신규 추가한다. Ch.5 상위설계는 이 결정을 API → Service → External 3계층 구조로 구체화한다.
+
+```mermaid
+flowchart LR
+  AsIs[Status-only cancel] --> Gap[Missing refund and inventory]
+  Gap --> ToBe[Orchestrated refund cancel]
+```
 
 ### 결정 요약
 
@@ -97,6 +115,15 @@ flowchart LR
 ### 데이터 흐름
 
 취소 요청은 인증 → 상태 검증 → (paid 시) 환불 → 재고 복구 → DB 저장 순으로 처리한다. happy path는 동기 호출 5단계이며 paid일 때만 PaymentGateway를 호출한다. 최종 DB commit 전에 재고 복구를 완료하여 PRD cancel-flow와 일치시킨다 [ref:A-5].
+
+```mermaid
+sequenceDiagram
+  Client->>CancelHandler: POST /orders/{id}/cancel
+  CancelHandler->>OrderService: cancel(orderId)
+  OrderService->>PaymentGateway: refund if paid
+  OrderService->>InventoryService: release
+  OrderService->>PostgreSQL: persist cancelled
+```
 
 1. Client → **CancelHandler**: `POST /orders/{id}/cancel` + JWT
 2. **CancelHandler** → **OrderService**: cancel(orderId)
@@ -150,6 +177,17 @@ status enum은 pending, paid, shipped, delivered, cancelled 다섯 값이다 [re
 ### 핵심 처리 흐름
 
 OrderService.cancel은 happy path와 PG·재고 실패 분기를 처리한다. PaymentGateway timeout과 InventoryService.release 실패 각각에 대해 보상·retry 정책을 적용한다 [ref:A-8].
+
+```mermaid
+flowchart TD
+  Start[Load order] --> Paid{status paid?}
+  Paid -->|yes| Refund[PaymentGateway.refund]
+  Paid -->|no| Inv[InventoryService.release]
+  Refund -->|timeout| E502[502 PAYMENT_TIMEOUT]
+  Refund --> Inv
+  Inv -->|fail| E500[500 INVENTORY_RELEASE_FAILED]
+  Inv --> Done[Persist cancelled]
+```
 
 **Happy path:** **OrderService** loads order → reject if cancelled → if paid call **PaymentGateway**.refund → **InventoryService**.release → persist cancelled + cancelled_at.
 
