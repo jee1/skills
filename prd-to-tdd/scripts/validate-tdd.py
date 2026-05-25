@@ -54,10 +54,16 @@ OFFICIAL_URL = re.compile(
     re.I,
 )
 
-SOURCE_BLOCK = re.compile(r"^\s*>\s*\*\*(결정|사실|근거|코드):\*\*", re.M)
+SOURCE_BLOCK = re.compile(r"^\s*>\s*\*\*(결정|사실|근거|코드|갈림|대안|권장|상태):\*\*", re.M)
 
 DECISION_BLOCK = re.compile(
     r">\s*\*\*결정:\*\*[^\n]*\n(?:>\s*\*\*근거:\*\*[^\n]*\n)?(?:>\s*\*\*코드:\*\*[^\n]*)?",
+    re.M,
+)
+
+FORK_BLOCK = re.compile(
+    r">\s*\*\*갈림:\*\*[^\n]*\n"
+    r"(?:>\s*\*\*[^\n]*\n)*?",
     re.M,
 )
 
@@ -149,7 +155,87 @@ def check_ch4_ch5_sources(body: str) -> list[ValidationError]:
             ValidationError(
                 0,
                 "source-block-missing",
-                "Chapters 4–5 appear to have content but no > **결정:** / **사실:** source blocks",
+                "Chapters 4–5 appear to have content but no > **결정:** / **갈림:** / **사실:** source blocks",
+            )
+        )
+    return errors
+
+
+def _fork_block_slice(body: str, start: int) -> str:
+    """Return consecutive blockquote lines starting at **갈림:**."""
+    lines = body[start:].splitlines()
+    collected: list[str] = []
+    for line in lines:
+        if line.startswith(">") or (not collected):
+            if line.startswith(">"):
+                collected.append(line)
+            elif not collected:
+                continue
+            else:
+                break
+        else:
+            break
+    return "\n".join(collected)
+
+
+def check_fork_blocks(body: str, mode: str) -> list[ValidationError]:
+    errors: list[ValidationError] = []
+    for match in re.finditer(r"^\s*>\s*\*\*갈림:\*\*", body, re.M):
+        line_num = body[: match.start()].count("\n") + 1
+        block = _fork_block_slice(body, match.start())
+        required = ("**대안:**", "**권장:**", "**근거:**", "**상태:**")
+        for token in required:
+            if token not in block:
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "fork-block-incomplete",
+                        f"Fork block missing {token}",
+                    )
+                )
+        if "**근거:**" in block and not OFFICIAL_URL.search(block):
+            errors.append(
+                ValidationError(
+                    line_num,
+                    "fork-no-official-url",
+                    "Fork block **근거:** missing official https URL for recommended option",
+                )
+            )
+        if "**상태:**" in block:
+            if "권장(미확정)" not in block and "확정" not in block:
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "fork-status-invalid",
+                        "**상태:** must be 권장(미확정) or 확정",
+                    )
+                )
+        if mode == "brownfield" and "**코드:**" in block and "Greenfield" not in block:
+            if not re.search(r"`[^`]+\.[a-zA-Z0-9]+:\d+", block):
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "fork-code-ref",
+                        "Brownfield fork block should include **코드:** path:line when applicable",
+                    )
+                )
+    return errors
+
+
+def check_pending_open_questions(body: str) -> list[ValidationError]:
+    errors: list[ValidationError] = []
+    if "권장(미확정)" not in body:
+        return errors
+    ch5_match = re.search(r"^##\s+5\.\s+", body, flags=re.M)
+    if not ch5_match:
+        return errors
+    ch5 = body[ch5_match.start() :]
+    if "열린 질문" not in ch5 and "최종 선택" not in ch5:
+        errors.append(
+            ValidationError(
+                0,
+                "pending-fork-no-open-question",
+                "Ch.4 has 권장(미확정) but Ch.5 lacks 열린 질문 / 최종 선택 item",
             )
         )
     return errors
@@ -190,7 +276,9 @@ def validate(path: Path) -> list[ValidationError]:
     errors.extend(check_chapters(body, mode))
     errors.extend(check_forbidden_phrases(body))
     errors.extend(check_ch4_ch5_sources(body))
+    errors.extend(check_fork_blocks(body, mode))
     errors.extend(check_tier1_decisions(body, mode))
+    errors.extend(check_pending_open_questions(body))
 
     return errors
 

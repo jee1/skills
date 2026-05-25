@@ -48,11 +48,61 @@ Every chapter must visibly answer its required dimensions (one sentence minimum)
    - First line: plain-language summary (PM-readable)
    - Following lines: technical detail (developer/audit)
 
+## Design Alternatives — When Multiple Options Exist
+
+Do **not** silently pick one option when the fork is real. Use the decision tree below.
+
+### Decision tree (apply in Phase 3 outline)
+
+| Situation | Ch.4 format | Ch.5 | User ask? |
+|-----------|-------------|------|-----------|
+| **Single clear winner** — code, PRD, or constraints favor one option | `> **결정:**` block | To-Be follows that decision | No |
+| **Real fork** — 2–3 viable options, no clear winner | `> **갈림:**` + `> **대안:**` + `> **권장:**` + `> **상태:**` | To-Be follows **권장**; list item under **열린 질문** if `권장(미확정)` | No |
+| **Tier-1 high impact fork** — auth, datastore, breaking API, major dependency contract | Same as fork; after user answers use `> **결정:**` + `> **상태:** 확정` | To-Be uses confirmed choice | **Yes — once, before Ch.4 draft** |
+
+**Single clear winner signals:** existing code pattern to extend; PRD mandates one approach; repo already depends on one stack; one option fails a hard constraint.
+
+**Real fork signals:** PRD silent or ambiguous; multiple options fit code/ops constraints; trade-offs are balanced.
+
+**Tier-1 high impact (ask user):** choice affects security boundary, data durability, public API contract, or migration cost beyond one sprint. Present **2–3 options + agent recommendation** in the question; do not draft Ch.4–5 for that topic until answered.
+
+### Ch.4 source block shapes
+
+**Confirmed single choice** — see [citation-tiers.md](citation-tiers.md) `> **결정:**`.
+
+**Multiple options (documented fork):**
+
+```markdown
+> **갈림:** Primary datastore
+> **대안:** (A) PostgreSQL — ACID, relational model (B) MongoDB — flexible schema
+> **권장:** (A) PostgreSQL — PRD requires cross-entity transactions
+> **근거:** [source:postgresql-transactions](https://www.postgresql.org/docs/current/tutorial-transactions.html)
+> **코드:** (Greenfield — 코드 없음)
+> **상태:** 권장(미확정)
+```
+
+**After user confirms Tier-1 fork:**
+
+```markdown
+> **결정:** PostgreSQL을 primary datastore로 채택한다.
+> **근거:** [source:postgresql-docs](https://www.postgresql.org/docs/current/)
+> **코드:** (Greenfield — 코드 없음)
+> **상태:** 확정
+```
+
+### Ch.5 rules for forks
+
+- **To-Be (목표 설계)** always follows **권장** or **확정** choice — never an unnamed option.
+- If any Ch.4 block has `> **상태:** 권장(미확정)`, Ch.5 **열린 질문** must include matching “최종 선택 필요” item naming the **갈림** topic.
+- Do not present three parallel To-Be architectures; one narrative path only.
+
 ## Outline Self-Check (before drafting)
 
 Before writing prose, verify the outline lists:
 
 - [ ] Every concept in introduction order (no concept used before listed)
+- [ ] Each Tier-1 topic tagged: `single` | `multi-recommend` | `needs-user-confirm`
+- [ ] User confirmation obtained for all `needs-user-confirm` items before Ch.4 draft
 - [ ] Tier-1 decisions all scheduled for Ch.4
 - [ ] PRD↔code gaps (brownfield) or PRD→decisions (greenfield) enumerated
 - [ ] No chapter depends on information from a later chapter

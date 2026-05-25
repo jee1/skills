@@ -6,10 +6,29 @@ Every technical claim in **Chapters 4–5** must carry a source block. Tier depe
 
 **When required:** architecture choice, security model, datastore, auth strategy, protocol, breaking change, major library adoption.
 
+Use **one of two block shapes** (see [narrative-rules.md](narrative-rules.md) decision tree):
+
+### Shape A — Single clear choice (`> **결정:**`)
+
 **Required elements:**
 - `> **결정:**` one clear sentence
 - `> **근거:**` at least one **official** URL (RFC, vendor docs, framework reference)
 - `> **코드:**` `path:line` if brownfield relevant code exists; or `(Greenfield — 코드 없음)`
+- `> **상태:** 확정` (optional but recommended)
+
+### Shape B — Documented fork (`> **갈림:**`)
+
+Use when 2–3 viable options exist and no clear winner without stakeholder input.
+
+**Required elements:**
+- `> **갈림:**` topic name
+- `> **대안:**` (A) … (B) … — max 3 options, one line each
+- `> **권장:**` (A|B|…) + one-sentence why
+- `> **근거:**` official URL supporting the **권장** option
+- `> **코드:**` as in Shape A
+- `> **상태:** 권장(미확정)` until user confirms; then rewrite as Shape A with `> **상태:** 확정`
+
+After user confirms a Tier-1 fork, replace Shape B with Shape A in the same subsection.
 
 **Example (Brownfield):**
 
@@ -67,3 +86,6 @@ Never use community-only sources for Tier-1 decisions.
 - Ch.4–5 bullet with technical content and no source block within the same subsection
 - Tier-1 decision with only PRD reference (must add official URL)
 - Fabricated URLs or paths
+- Picking one Tier-1 option in prose without `**결정:**` or `**갈림:**` block
+- `**갈림:**` without `**권장:**` and `**상태:**`
+- Multiple parallel To-Be designs in Ch.5 for the same fork

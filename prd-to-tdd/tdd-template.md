@@ -30,8 +30,9 @@ review_rounds: 0
 
 ## 4. 갭과 설계 전환
 
-<!-- Brownfield: PRD↔code gaps, conflicts (code-first), Tier-1 decisions. -->
-<!-- Greenfield: rename to "## 4. 설계 결정" — PRD requirements → choices, Tier-1. -->
+<!-- Brownfield: PRD↔code gaps; Tier-1 as **결정:** or **갈림:**+**권장:** -->
+<!-- Greenfield: rename to "## 4. 설계 결정" — same block shapes -->
+<!-- Ch.5 To-Be follows 권장/확정 only; 열린 질문 for 권장(미확정) -->
 
 ## 5. 목표 설계와 마무리
 

@@ -90,3 +90,60 @@ Webhook 수신 endpoint는 `POST /webhooks/payment`로 분리한다. 서명 검�
 ```
 
 First line = PM; rest = dev.
+
+---
+
+## Multiple options — Good (documented fork)
+
+```markdown
+## 4. 설계 결정
+
+요약: 저장소는 PostgreSQL과 MongoDB가 모두 가능하나, 트랜잭션 요구로 PostgreSQL을 권장한다.
+
+PRD는 주문·재고·결제 간 일관성을 요구한다. 스키마 유연성만으로는 이 요구를 충족하기 어렵다.
+
+> **갈림:** Primary datastore
+> **대안:** (A) PostgreSQL — ACID 트랜잭션 (B) MongoDB — 문서 기반 유연 스키마
+> **권장:** (A) PostgreSQL — PRD의 cross-entity 트랜잭션 요구
+> **근거:** [source:postgresql-transactions](https://www.postgresql.org/docs/current/tutorial-transactions.html)
+> **코드:** (Greenfield — 코드 없음)
+> **상태:** 권장(미확정)
+
+## 5. 목표 설계와 마무리
+
+요약: PostgreSQL 기준으로 주문·재고 테이블과 API를 설계한다.
+
+(… To-Be detail assuming PostgreSQL …)
+
+### 열린 질문
+
+- **최종 선택 필요:** Primary datastore — PostgreSQL(권장) vs MongoDB 확정 필요
+```
+
+**Why good:** alternatives visible; one To-Be path (권장); open question matches `권장(미확정)`.
+
+---
+
+## Multiple options — Bad
+
+```markdown
+## 4. 설계 결정
+
+PostgreSQL 또는 MongoDB를 사용할 수 있다. MongoDB로 진행한다.
+
+> **결정:** MongoDB
+```
+
+**Violations:** other viable option ignored without `**갈림:**`; no rationale for rejecting PostgreSQL when PRD implies transactions.
+
+---
+
+## Multiple options — Bad (silent auto-pick)
+
+```markdown
+## 4. 설계 결정
+
+> **결정:** Redis를 캐시로 사용한다.
+```
+
+**Violation:** when Kafka/RabbitMQ were equally viable and PRD silent — should be `**갈림:**` or user confirm first.

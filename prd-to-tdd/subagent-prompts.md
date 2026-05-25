@@ -48,6 +48,8 @@ Checklist:
 6. Each chapter answers its 6하원칙 dimensions (see narrative-rules table).
 7. Mixed audience: summary line before technical detail in subsections.
 8. No appendix re-explaining earlier content.
+9. Design alternatives: clear winner uses **결정:**; real fork uses **갈림:**+**권장:**+**상태:**; no silent pick when fork was documented in outline.
+10. Ch.5 To-Be follows one path (권장 or 확정); **열린 질문** present for each Ch.4 `권장(미확정)`.
 
 Return ONLY findings in format:
 severity | chapter:line | issue | fix
@@ -72,14 +74,15 @@ Read the TDD draft, citation-tiers.md, and the source PRD text.
 
 Checklist:
 1. Every technical claim in Ch.4–5 has a source block in the same subsection.
-2. Tier-1 decisions (architecture, security, datastore, auth, protocols) have:
-   - **결정:** line
-   - **근거:** with at least one official URL
-   - **코드:** path:line OR (Greenfield — 코드 없음)
-3. Tier-2 facts have **사실:** and **근거:** with PRD anchor + code when brownfield.
-4. No Tier-1 backed only by blog/community without official URL.
-5. URL format looks intentional (not placeholder example.com unless marked).
-6. PRD anchors match actual PRD section/content.
+2. Tier-1 topics use either:
+   - **결정:** + **근거:** (official URL) + **코드:**
+   - **갈림:** + **대안:** + **권장:** + **근거:** (official URL for 권장) + **코드:** + **상태:**
+3. **갈림:** blocks must not omit **권장:** or **상태:**; max 3 alternatives.
+4. Tier-2 facts have **사실:** and **근거:** with PRD anchor + code when brownfield.
+5. No Tier-1 backed only by blog/community without official URL.
+6. URL format looks intentional (not placeholder example.com unless marked).
+7. PRD anchors match actual PRD section/content.
+8. No Tier-1 choice stated only in prose without a source block.
 
 Return ONLY findings in format:
 severity | chapter:line | issue | fix

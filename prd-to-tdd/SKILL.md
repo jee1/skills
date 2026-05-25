@@ -29,7 +29,8 @@ Copy and track:
 PRD → TDD Progress:
 - [ ] Phase 1: PRD ingest
 - [ ] Phase 2: Full-repo analysis + mode (brownfield | greenfield)
-- [ ] Phase 3: Outline (concept order, gaps/decisions)
+- [ ] Phase 3: Outline (concept order, gaps/decisions, Tier-1 tags)
+- [ ] Phase 3b: User confirm Tier-1 forks (if any `needs-user-confirm`)
 - [ ] Phase 4: Draft TDD (5 chapters, in order)
 - [ ] Phase 5: validate-tdd.py pass
 - [ ] Phase 6: 3 subagents parallel, no Critical (≤2 rounds)
@@ -81,20 +82,41 @@ Set frontmatter `mode` accordingly. See design spec for Ch.3/Ch.4 title variants
 Before prose, write an outline (user-visible or internal):
 
 1. Concepts in **introduction order** (no use before define)
-2. Tier-1 decision list for Ch.4
+2. Tier-1 topics for Ch.4, each tagged:
+   - `single` — one clear choice → use `> **결정:**`
+   - `multi-recommend` — real fork → use `> **갈림:**` + `> **권장:**` + `> **상태:** 권장(미확정)`
+   - `needs-user-confirm` — Tier-1 high impact → **ask user before Ch.4** (see below)
 3. Brownfield: PRD↔code gap list | Greenfield: PRD→decision list
 
 Self-check against [narrative-rules.md](narrative-rules.md) outline checklist.
 
 ---
 
+## Phase 3b — User Confirmation (Tier-1 forks only)
+
+**When:** outline has any `needs-user-confirm` item (auth, datastore, breaking API, major dependency contract, balanced trade-offs with no code/PRD tiebreaker).
+
+**How:** One message per fork (or one message listing all forks). For each:
+
+- Topic name
+- 2–3 **대안** with one-line trade-off each
+- **권장** + short rationale
+- Ask user to pick or confirm recommendation
+
+**Do not** draft Ch.4–5 for that topic until answered. After answer, tag as `single` and use `> **결정:**` + `> **상태:** 확정`.
+
+If user defers (“나중에”), keep `> **갈림:**` + `> **상태:** 권장(미확정)` and add Ch.5 **열린 질문**.
+
+---
+
 ## Phase 4 — Draft
 
-1. Read [tdd-template.md](tdd-template.md)
+1. Read [tdd-template.md](tdd-template.md) and [narrative-rules.md](narrative-rules.md) (alternatives decision tree)
 2. Create `docs/design/` if missing
 3. Write **one chapter at a time** in fixed order
-4. Ch.4–5: use source blocks from [citation-tiers.md](citation-tiers.md)
-5. Each subsection: **summary line** (PM) → technical detail (dev)
+4. Ch.4: per Tier-1 tag use `**결정:**` or `**갈림:**` blocks from [citation-tiers.md](citation-tiers.md)
+5. Ch.5: To-Be follows **권장** or **확정** only; **열린 질문** for each `권장(미확정)` in Ch.4
+6. Each subsection: **summary line** (PM) → technical detail (dev)
 
 Filename: `docs/design/YYYY-MM-DD-<feature_slug>-tdd.md`
 
@@ -138,8 +160,8 @@ Confirm file at `docs/design/YYYY-MM-DD-<feature>-tdd.md`.
 
 Tell user:
 - Path, mode, validation status, review rounds
-- Summary of Ch.4 key decisions
-- Open questions from Ch.5
+- Ch.4: **확정** decisions vs **권장(미확정)** forks
+- Open questions from Ch.5 (especially “최종 선택 필요”)
 
 **STOP.** Do not offer implementation, tasks, or `writing-plans` unless user asks separately.
 
