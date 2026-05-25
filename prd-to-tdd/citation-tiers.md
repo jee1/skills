@@ -91,3 +91,7 @@ Never use community-only sources for Tier-1 decisions.
 - Picking one Tier-1 option in prose without `**결정:**` or `**갈림:**` block
 - `**갈림:**` without `**권장:**` and `**상태:**`
 - Multiple parallel To-Be designs in Ch.5 for the same fork
+
+## Ch.6 subsection citation density (strict)
+
+Each Ch.5–6 ### with a markdown table or ≥120 chars must include ≥1 source block in **that same ###**, not only at chapter level.

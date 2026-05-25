@@ -102,9 +102,72 @@ No new Tier-1 decisions in Ch.7 unless escalated as open question.
 
 ## Outline addition (Phase 3)
 
-For each feature, outline must list:
+For each feature, outline must list (see [outline-template.md](outline-template.md)):
 
 - [ ] Components to introduce in Ch.5 (names fixed before Ch.6)
 - [ ] APIs/events for Ch.6
 - [ ] Entities for Ch.6 data model
 - [ ] Primary flow for Ch.5 data flow + Ch.6 detail
+- [ ] ≥2 error branches mapped to Ch.6
+
+**Phase 4 gate:** Do not draft until outline row counts meet minimums in outline-template.md.
+
+---
+
+## Depth rubric (strict profile — enforced by `validate-tdd.py`)
+
+Default validation is **strict**. Use `python scripts/validate-tdd.py --lenient` only for legacy drafts.
+
+### Every Ch.5–6 ### subsection
+
+| Rule | Minimum |
+|------|---------|
+| Opens with **요약:** | First content line |
+| Substance | ≥120 characters per ### |
+| Source block | ≥1 `> **사실:**` or `> **결정:**` per ### with substantive content |
+
+### Chapter 5 — 상위설계
+
+| Subsection | Minimum content |
+|------------|-----------------|
+| **아키텍처 개요** | **요약:** + system context + named layers (API / service / data / external); optional mermaid (box-level only) |
+| **구성요소 및 책임** | **요약:** + ≥2 components as `- **Name** (신규\|기존): responsibility`; brownfield: every component labeled |
+| **데이터 흐름** | **요약:** + ≥3 numbered steps (`1.` …); mark `(async)` on webhook/queue boundaries |
+
+### Chapter 6 — 상세설계
+
+| Subsection | Minimum content |
+|------------|-----------------|
+| **API 및 인터페이스** | **요약:** + markdown table per endpoint (see below); auth column required when HTTP |
+| **데이터 모델** | **요약:** + entity field table (≥3 field rows) with types and constraints |
+| **핵심 처리 흐름** | **요약:** + happy path + ≥2 error/retry branches; state table if lifecycle exists |
+
+### Required table schemas
+
+**API (per endpoint):**
+
+| Field | Type | Required | Note |
+|-------|------|----------|------|
+
+Plus error table when HTTP:
+
+| Code | HTTP | When | Client action | Retry? |
+|------|------|------|---------------|--------|
+
+**Entity:**
+
+| Field | Type | Nullable | Constraint | Notes |
+|-------|------|----------|------------|-------|
+
+**State (when lifecycle):**
+
+| State | Enter trigger | Exit trigger | Side effects |
+|-------|---------------|--------------|--------------|
+
+### Cross-chapter rules
+
+- Every **Name** in Ch.5 ### 구성요소 must appear ≥1× in Ch.6.
+- No field-level HTTP body in Ch.5; no new major component in Ch.6 without Ch.5 row.
+- PRD coverage: each functional requirement → ≥1 outline row → ≥1 sentence or table row in Ch.5–6.
+
+See [examples.md](examples.md) § Ch.5–6 depth for full good/bad excerpts.

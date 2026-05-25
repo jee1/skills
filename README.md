@@ -51,6 +51,7 @@ skills/
 
    ```bash
    python prd-to-tdd/scripts/validate-tdd.py docs/design/2026-05-25-sample-order-cancel-tdd.md
+   # strict (default) enforces Ch.5–6 depth; add --lenient for legacy drafts
    ```
 
-Design spec for `prd-to-tdd`: [docs/superpowers/specs/2026-05-25-prd-to-tdd-skill-design.md](docs/superpowers/specs/2026-05-25-prd-to-tdd-skill-design.md).
+Design spec for `prd-to-tdd`: [docs/superpowers/specs/2026-05-25-prd-to-tdd-skill-design.md](docs/superpowers/specs/2026-05-25-prd-to-tdd-skill-design.md). Strict depth profile: [docs/superpowers/specs/2026-05-25-prd-to-tdd-strict-depth-design.md](docs/superpowers/specs/2026-05-25-prd-to-tdd-strict-depth-design.md).

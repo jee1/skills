@@ -79,6 +79,24 @@ OFFICIAL_URL = re.compile(
 
 SOURCE_BLOCK = re.compile(r"^\s*>\s*\*\*(결정|사실|근거|코드|갈림|대안|권장|상태):\*\*", re.M)
 
+# --- Strict depth profile (default) ---
+SUBSECTION_MIN_CHARS = 120
+MIN_CH5_COMPONENTS = 2
+MIN_DATA_FLOW_STEPS = 3
+MIN_API_TABLE_DATA_ROWS = 3
+MIN_ENTITY_FIELD_ROWS = 3
+MIN_ERROR_BRANCH_LINES = 2
+
+YOAK_PATTERN = re.compile(r"요약\s*:")
+COMPONENT_BULLET = re.compile(r"^[-*]\s+\*\*([^*]+)\*\*", re.M)
+COMPONENT_TABLE = re.compile(r"\|\s*\*\*([^*]+)\*\*")
+COMPONENT_LABEL = re.compile(r"\((신규|기존)\)")
+NUMBERED_STEP = re.compile(r"^\s*\d+\.", re.M)
+ERROR_BRANCH = re.compile(
+    r"오류|에러|실패|retry|재시|rollback|보상|4\d{2}|5\d{2}|error|fail",
+    re.I,
+)
+
 DECISION_BLOCK = re.compile(
     r">\s*\*\*결정:\*\*[^\n]*\n(?:>\s*\*\*근거:\*\*[^\n]*\n)?(?:>\s*\*\*코드:\*\*[^\n]*)?",
     re.M,
@@ -172,6 +190,180 @@ def _chapter_slice(body: str, start_pattern: str, end_pattern: str | None) -> st
         if end:
             return body[begin : begin + 1 + end.start()]
     return body[begin:]
+
+
+def _subsection_content(chapter: str, header_pattern: str) -> tuple[int, str]:
+    match = re.search(header_pattern, chapter, re.M)
+    if not match:
+        return 0, ""
+    line_num = chapter[: match.start()].count("\n") + 1
+    start = match.end()
+    next_header = re.search(r"^###\s+|^##\s+", chapter[start:], re.M)
+    end = start + next_header.start() if next_header else len(chapter)
+    return line_num, chapter[start:end].strip()
+
+
+def _count_table_data_rows(text: str) -> int:
+    table_lines = [line for line in text.splitlines() if line.strip().startswith("|")]
+    if len(table_lines) < 2:
+        return 0
+    data_rows = 0
+    for index, line in enumerate(table_lines):
+        if re.match(r"^\s*\|[\s\-:|]+\|\s*$", line):
+            continue
+        if index == 0:
+            continue
+        data_rows += 1
+    return data_rows
+
+
+def _extract_component_names(text: str) -> list[str]:
+    names: list[str] = []
+    for pattern in (COMPONENT_BULLET, COMPONENT_TABLE):
+        names.extend(pattern.findall(text))
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for name in names:
+        clean = name.strip()
+        if clean and clean not in seen:
+            seen.add(clean)
+            ordered.append(clean)
+    return ordered
+
+
+def check_design_depth(body: str, mode: str) -> list[ValidationError]:
+    """Strict profile: minimum content depth for Ch.5–6 subsections."""
+    errors: list[ValidationError] = []
+    ch5 = _chapter_slice(body, r"^##\s+5\.\s+상위설계", r"^##\s+6\.\s+")
+    ch6 = _chapter_slice(body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
+    if not ch5 or not ch6:
+        return errors
+
+    ch5_checks = [
+        (r"###\s+아키텍처\s+개요", "ch5-architecture"),
+        (r"###\s+구성요소\s+및\s+책임", "ch5-components"),
+        (r"###\s+데이터\s+흐름", "ch5-data-flow"),
+    ]
+    ch6_checks = [
+        (r"###\s+API\s+및\s+인터페이스", "ch6-api"),
+        (r"###\s+데이터\s+모델", "ch6-data-model"),
+        (r"###\s+핵심\s+처리\s+흐름", "ch6-flow"),
+    ]
+
+    for chapter, checks in ((ch5, ch5_checks), (ch6, ch6_checks)):
+        for pattern, _label in checks:
+            line_num, content = _subsection_content(chapter, pattern)
+            if not content:
+                continue
+            if not YOAK_PATTERN.search(content):
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "subsection-no-yoyak",
+                        "Subsection must open with 요약: (see design-sections.md depth rubric)",
+                    )
+                )
+            if len(content) < SUBSECTION_MIN_CHARS:
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "subsection-thin",
+                        f"Subsection content too thin ({len(content)} chars, min {SUBSECTION_MIN_CHARS})",
+                    )
+                )
+            if len(content) >= 80 and not SOURCE_BLOCK.search(content):
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "subsection-source-missing",
+                        "Subsection needs a source block (> **사실:** or **결정:**)",
+                    )
+                )
+
+    comp_line, components_sec = _subsection_content(ch5, r"###\s+구성요소\s+및\s+책임")
+    component_names = _extract_component_names(components_sec)
+    if len(component_names) < MIN_CH5_COMPONENTS:
+        errors.append(
+            ValidationError(
+                comp_line,
+                "ch5-insufficient-components",
+                f"Ch.5 ### 구성요소 needs ≥{MIN_CH5_COMPONENTS} named components (**Name** bullets or table)",
+            )
+        )
+
+    if mode == "brownfield" and component_names:
+        for line in components_sec.splitlines():
+            if not COMPONENT_BULLET.match(line.strip()):
+                continue
+            if not COMPONENT_LABEL.search(line):
+                bullet_line = comp_line + components_sec[: components_sec.find(line)].count("\n")
+                errors.append(
+                    ValidationError(
+                        bullet_line,
+                        "brownfield-component-label",
+                        f"Brownfield component missing (신규) or (기존) label: {line.strip()[:60]}",
+                    )
+                )
+
+    flow_line, flow_sec = _subsection_content(ch5, r"###\s+데이터\s+흐름")
+    step_count = len(NUMBERED_STEP.findall(flow_sec))
+    if step_count < MIN_DATA_FLOW_STEPS:
+        errors.append(
+            ValidationError(
+                flow_line,
+                "ch5-data-flow-steps",
+                f"Ch.5 ### 데이터 흐름 needs ≥{MIN_DATA_FLOW_STEPS} numbered steps (1. 2. 3.)",
+            )
+        )
+
+    api_line, api_sec = _subsection_content(ch6, r"###\s+API\s+및\s+인터페이스")
+    api_rows = _count_table_data_rows(api_sec)
+    if api_rows < MIN_API_TABLE_DATA_ROWS:
+        errors.append(
+            ValidationError(
+                api_line,
+                "ch6-api-no-table",
+                f"Ch.6 ### API needs markdown table with ≥{MIN_API_TABLE_DATA_ROWS} data rows",
+            )
+        )
+
+    model_line, model_sec = _subsection_content(ch6, r"###\s+데이터\s+모델")
+    model_rows = _count_table_data_rows(model_sec)
+    field_lines = len(
+        [line for line in model_sec.splitlines() if re.search(r":\s*\w+|^\|\s*\w", line.strip())]
+    )
+    if model_rows < MIN_ENTITY_FIELD_ROWS and field_lines < MIN_ENTITY_FIELD_ROWS:
+        errors.append(
+            ValidationError(
+                model_line,
+                "ch6-data-model-thin",
+                f"Ch.6 ### 데이터 모델 needs entity table (≥{MIN_ENTITY_FIELD_ROWS} field rows)",
+            )
+        )
+
+    proc_line, proc_sec = _subsection_content(ch6, r"###\s+핵심\s+처리\s+흐름")
+    error_lines = [line for line in proc_sec.splitlines() if ERROR_BRANCH.search(line)]
+    if len(error_lines) < MIN_ERROR_BRANCH_LINES:
+        errors.append(
+            ValidationError(
+                proc_line,
+                "ch6-flow-no-errors",
+                f"Ch.6 ### 핵심 처리 흐름 needs ≥{MIN_ERROR_BRANCH_LINES} error/retry branches",
+            )
+        )
+
+    if component_names:
+        for name in component_names:
+            if name not in ch6:
+                errors.append(
+                    ValidationError(
+                        comp_line,
+                        "ch5-ch6-component-drift",
+                        f"Ch.5 component **{name}** must be referenced in Ch.6 상세설계",
+                    )
+                )
+
+    return errors
 
 
 def check_design_subsections(body: str) -> list[ValidationError]:
@@ -329,7 +521,7 @@ def check_tier1_decisions(body: str, mode: str) -> list[ValidationError]:
     return errors
 
 
-def validate(path: Path) -> list[ValidationError]:
+def validate(path: Path, *, strict: bool = True) -> list[ValidationError]:
     text = path.read_text(encoding="utf-8")
     meta, body, errors = parse_frontmatter(text)
     mode = meta.get("mode", "")
@@ -341,21 +533,28 @@ def validate(path: Path) -> list[ValidationError]:
     errors.extend(check_fork_blocks(body, mode))
     errors.extend(check_tier1_decisions(body, mode))
     errors.extend(check_pending_open_questions(body))
+    if strict:
+        errors.extend(check_design_depth(body, mode))
 
     return errors
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <path-to-tdd.md>", file=sys.stderr)
+    args = sys.argv[1:]
+    strict = True
+    if args and args[0] == "--lenient":
+        strict = False
+        args = args[1:]
+    if len(args) != 1:
+        print(f"Usage: {sys.argv[0]} [--lenient] <path-to-tdd.md>", file=sys.stderr)
         return 2
 
-    path = Path(sys.argv[1])
+    path = Path(args[0])
     if not path.is_file():
         print(f"File not found: {path}", file=sys.stderr)
         return 2
 
-    errors = validate(path)
+    errors = validate(path, strict=strict)
     if not errors:
         print(f"OK: {path}")
         return 0

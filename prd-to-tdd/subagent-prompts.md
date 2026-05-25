@@ -8,8 +8,8 @@ Merge output; any **Critical** finding blocks completion until fixed (max 2 full
 
 | Level | Meaning | Blocks merge? |
 |-------|---------|---------------|
-| Critical | Breaks forward-only rule, fabricated code, missing Tier-1 source, false As-Is | Yes |
-| Major | 6하원칙 gap, weak citation, unclear gap labeling | Fix before save |
+| Critical | Breaks forward-only rule, fabricated code, missing Tier-1 source, false As-Is, **strict depth rubric failure** | Yes |
+| Major | 6하원칙 gap, weak citation, unclear gap labeling, missing auth/error detail | Fix before save |
 | Minor | Style, wording | Optional |
 
 ## Output Format (all reviewers)
@@ -52,6 +52,11 @@ Checklist:
 10. Mixed audience: 요약 line before technical detail in subsections.
 11. No appendix re-explaining earlier content.
 12. Design alternatives: **결정:** / **갈림:** rules; Ch.5–6 follow one To-Be path; Ch.7 열린 질문 for 권장(미확정).
+13. Strict depth (design-sections.md): every Ch.5–6 ### opens with 요약:; Ch.5 ≥2 named components; Ch.5 flow ≥3 numbered steps.
+14. Ch.6 API subsection has field-level markdown table + error codes when HTTP; data model has ≥3 field rows.
+15. Ch.6 ### 핵심 처리 흐름 has ≥2 error/retry branches (not happy-path only).
+16. Every Ch.5 component **Name** appears in Ch.6; no field-level detail in Ch.5; no new Ch.6 component absent from Ch.5.
+17. Brownfield: each component bullet has (신규) or (기존).
 
 Return ONLY findings in format:
 severity | chapter:line | issue | fix

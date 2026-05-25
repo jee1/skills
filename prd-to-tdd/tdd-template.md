@@ -2,6 +2,8 @@
 
 Copy this skeleton. Replace `{{placeholders}}`. Write chapters **in order**; complete one before starting the next.
 
+Complete [outline-template.md](outline-template.md) **before** filling this template.
+
 ```markdown
 ---
 title: "TDD: {{feature_title}}"
@@ -33,27 +35,85 @@ review_rounds: 0
 
 ## 5. 상위설계
 
-<!-- See design-sections.md — required ### subsections below -->
-
 ### 아키텍처 개요
+
+요약: …
+
+<!-- Layers: API / Service / Data / External. Box diagram optional. -->
 
 ### 구성요소 및 책임
 
+요약: …
+
+| Component | 신규/기존 | Responsibility | Trust boundary |
+|-----------|-----------|----------------|----------------|
+| **Example** | 기존 | … | internal |
+
+> **사실:** …
+> **근거:** [source:prd#…] + `path:line`
+
 ### 데이터 흐름
+
+요약: …
+
+1. …
+2. …
+3. …
+<!-- Mark (async) for webhook/queue -->
 
 ## 6. 상세설계
 
 ### API 및 인터페이스
 
+요약: …
+
+#### `POST /example`
+
+| Field | Type | Required | Note |
+|-------|------|----------|------|
+| … | … | … | … |
+
+| Code | HTTP | When | Client action | Retry? |
+|------|------|------|---------------|--------|
+| … | … | … | … | … |
+
+> **사실:** …
+> **근거:** [source:…] + `path:line`
+
 ### 데이터 모델
 
+요약: …
+
+#### `examples`
+
+| Field | Type | Nullable | Constraint | Notes |
+|-------|------|----------|------------|-------|
+| id | uuid | no | PK | … |
+
+> **사실:** …
+> **근거:** …
+
 ### 핵심 처리 흐름
+
+요약: …
+
+**Happy path:** …
+
+**Errors:**
+- … (retry …)
+- … (fail …)
+
+> **사실:** …
+> **근거:** …
 
 ## 7. 마무리
 
 ### 롤아웃·일정
 
 ### 리스크
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
 
 ### 열린 질문
 ```
@@ -71,4 +131,4 @@ Chapters 1, 2, 5, 6, 7 titles are **identical** in both modes.
 
 `docs/design/YYYY-MM-DD-{{feature_slug}}-tdd.md`
 
-See [design-sections.md](design-sections.md) for subsection content rules.
+See [design-sections.md](design-sections.md) for subsection content rules and strict depth rubric.

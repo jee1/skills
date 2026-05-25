@@ -19,6 +19,7 @@ Produces **Technical Design Document** only. No implementation plans, tasks, or 
 | [citation-tiers.md](citation-tiers.md) | When writing Ch.4–6; attach to citation-reviewer |
 | [tdd-template.md](tdd-template.md) | Before drafting |
 | [design-sections.md](design-sections.md) | Before drafting Ch.5–6 |
+| [outline-template.md](outline-template.md) | Phase 3 — required Ch.5–6 mapping |
 | [subagent-prompts.md](subagent-prompts.md) | Phase 6 spawn |
 | [examples.md](examples.md) | When unsure about tone or structure |
 
@@ -80,7 +81,7 @@ Set frontmatter `mode` accordingly. See design spec for Ch.3/Ch.4 title variants
 
 ## Phase 3 — Outline
 
-Before prose, write an outline (user-visible or internal):
+Before prose, write an outline using [outline-template.md](outline-template.md) (user-visible or internal). **Do not start Phase 4 until minimum row counts are met.**
 
 1. Concepts in **introduction order** (no use before define)
 2. Tier-1 topics for Ch.4, each tagged:
@@ -88,8 +89,13 @@ Before prose, write an outline (user-visible or internal):
    - `multi-recommend` — real fork → use `> **갈림:**` + `> **권장:**` + `> **상태:** 권장(미확정)`
    - `needs-user-confirm` — Tier-1 high impact → **ask user before Ch.4** (see below)
 3. Brownfield: PRD↔code gap list | Greenfield: PRD→decision list
+4. **Ch.5–6 mapping tables (required):**
+   - Components (≥2 names, 신규/기존 for brownfield)
+   - APIs/events (≥1 per user-facing action)
+   - Entities (≥1 per persisted object, field names listed)
+   - Primary flow (≥5 steps) + error branches (≥2)
 
-Self-check against [narrative-rules.md](narrative-rules.md) outline checklist.
+Self-check against [narrative-rules.md](narrative-rules.md) outline checklist and [design-sections.md](design-sections.md) depth rubric.
 
 ---
 
@@ -115,11 +121,12 @@ If user defers (“나중에”), keep `> **갈림:**` + `> **상태:** 권장(�
 1. Read [tdd-template.md](tdd-template.md), [design-sections.md](design-sections.md), [narrative-rules.md](narrative-rules.md)
 2. Create `docs/design/` if missing
 3. Write **one chapter at a time** in fixed order (1 → 7)
-4. Ch.4: `**결정:**` or `**갈림:**` blocks from [citation-tiers.md](citation-tiers.md)
-5. Ch.5 **상위설계**: all three ### subsections (architecture, components, data flow)
-6. Ch.6 **상세설계**: all three ### subsections (API, data model, processing flow)
-7. Ch.7 **마무리**: rollout, risks, 열린 질문 (for each Ch.4 `권장(미확정)`)
-8. Each subsection: **요약:** (PM) → technical detail (dev)
+4. **Expand every Phase 3 outline row** into ≥1 sentence or table row in the mapped ### subsection — no orphan rows, no empty subsections
+5. Ch.4: `**결정:**` or `**갈림:**` blocks from [citation-tiers.md](citation-tiers.md)
+6. Ch.5 **상위설계**: all three ### subsections; meet [design-sections.md](design-sections.md) depth rubric (요약, ≥2 components, ≥3 flow steps)
+7. Ch.6 **상세설계**: API field + error tables, entity field table, ≥2 error branches; every Ch.5 component name referenced
+8. Ch.7 **마무리**: rollout, risks table, 열린 질문 (for each Ch.4 `권장(미확정)`)
+9. Each subsection: **요약:** (PM) → technical detail (dev) → source block when substantive
 
 Filename: `docs/design/YYYY-MM-DD-<feature_slug>-tdd.md`
 
@@ -132,6 +139,8 @@ Run the validator from this skill package (repo: `skills/prd-to-tdd/`, installed
 ```bash
 python scripts/validate-tdd.py docs/design/YYYY-MM-DD-<feature>-tdd.md
 ```
+
+Default is **strict** (Ch.5–6 depth rubric). Legacy drafts: add `--lenient` to skip depth checks.
 
 Use the path to `validate-tdd.py` inside the skill directory. `<feature>-tdd.md` lives in the **target project** under `docs/design/`.
 

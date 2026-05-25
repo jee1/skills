@@ -108,7 +108,11 @@ Do **not** silently pick one option when the fork is real. Use the decision tree
 Before writing prose, verify the outline lists:
 
 - [ ] Every concept in introduction order (no concept used before listed)
-- [ ] Components (Ch.5), APIs/entities (Ch.6) listed in outline before draft
+- [ ] Ch.5 component list: ≥2 names (see outline-template.md)
+- [ ] Ch.6 API/event list: ≥1 per user-facing action
+- [ ] Ch.6 entity list: ≥1 per persisted object with field names
+- [ ] Flow steps: ≥5 (same names in Ch.5 ### 데이터 흐름 and Ch.6 ### 핵심 처리 흐름)
+- [ ] Error branches: ≥2 mapped to Ch.6
 - [ ] Each Tier-1 topic tagged: `single` | `multi-recommend` | `needs-user-confirm`
 - [ ] User confirmation obtained for all `needs-user-confirm` items before Ch.4 draft
 - [ ] Tier-1 decisions all scheduled for Ch.4
