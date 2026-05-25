@@ -20,8 +20,10 @@ Write all three subsections. Each opens with a **요약:** line.
 
 - System context: where this feature sits in the product
 - Layering (API / service / data / external)
-- Diagram optional (mermaid allowed): box-level only, no field-level detail
+- Diagram **required** (mermaid): box-level only, no field-level detail
 - Reflect **확정** or **권장** choices from Ch.4 only
+- End subsection with `#### 한눈에` (3 PM-readable bullets)
+- Tier-2 facts: `[ref:A-n]` inline (Appendix A), not `> **사실:**`
 
 ### 구성요소 및 책임
 
@@ -29,8 +31,7 @@ Write all three subsections. Each opens with a **요약:** line.
 - One-line responsibility per component
 - External systems (PG, queue, auth provider) and trust boundaries
 - Brownfield: note **신규** vs **기존** per component
-
-> **사실:** blocks with Tier-2 citations where mapping to code or PRD
+- Tier-2: `[ref:A-n]` where mapping to code or PRD
 
 ### 데이터 흐름
 
@@ -42,7 +43,9 @@ Write all three subsections. Each opens with a **요약:** line.
 
 ## Chapter 6 — 상세설계 (required ### subsections)
 
-Drill down into components named in Ch.5. Each subsection opens with **요약:**.
+**Reference mode:** Open with `### 스펙 인덱스` (before other ###). In each subsection: **요약:** → tables first → ≤2 sentences prose → `[ref:A-n]` for Tier-2.
+
+Drill down into components named in Ch.5. Each ### opens with **요약:**.
 
 ### API 및 인터페이스
 
@@ -50,8 +53,7 @@ Drill down into components named in Ch.5. Each subsection opens with **요약:**
 - Request/response shape at field level (tables or bullet lists)
 - Authn/authz per endpoint
 - Idempotency, pagination, rate limits if applicable
-
-> **사실:** or **결정:** blocks; link to OpenAPI/vendor docs when relevant
+- Tier-2: `[ref:A-n]`; link to OpenAPI/vendor docs in Appendix A URL column
 
 ### 데이터 모델
 
@@ -124,13 +126,13 @@ Default validation is **strict**. Use `python scripts/validate-tdd.py --lenient`
 |------|---------|
 | Opens with **요약:** | First content line |
 | Substance | ≥120 characters per ### |
-| Source block | ≥1 `> **사실:**` or `> **결정:**` per ### with substantive content |
+| Tier-2 trace | `[ref:A-n]` in body + Appendix A row (readability profile) |
 
 ### Chapter 5 — 상위설계
 
 | Subsection | Minimum content |
 |------------|-----------------|
-| **아키텍처 개요** | **요약:** + system context + named layers (API / service / data / external); optional mermaid (box-level only) |
+| **아키텍처 개요** | **요약:** + system context + named layers; **required** mermaid (box-level only); `#### 한눈에` (3 bullets) |
 | **구성요소 및 책임** | **요약:** + ≥2 components as `- **Name** (신규\|기존): responsibility`; brownfield: every component labeled |
 | **데이터 흐름** | **요약:** + ≥3 numbered steps (`1.` …); mark `(async)` on webhook/queue boundaries |
 
@@ -171,3 +173,18 @@ Plus error table when HTTP:
 - PRD coverage: each functional requirement → ≥1 outline row → ≥1 sentence or table row in Ch.5–6.
 
 See [examples.md](examples.md) § Ch.5–6 depth for full good/bad excerpts.
+
+---
+
+## Readability profile (enforced by `validate-tdd.py --readability`)
+
+| Area | Rule |
+|------|------|
+| Ch.1 | `### TL;DR`, `### Goals / Non-Goals`, `### 이 문서 읽는 법`, `### 목차` |
+| Ch.4 | `### 결정 요약` table ≥1 data row |
+| Ch.5 | mermaid fence in ### 아키텍처 개요; `#### 한눈에` (3 bullets) per ### |
+| Ch.6 | `### 스펙 인덱스` table before other ###; tables before prose |
+| Ch.5–6 | No `> **사실:**`; use `[ref:A-n]` |
+| Appendices | A required; B required when Ch.4 has blockquotes |
+
+Strict depth rubric (120 chars, tables, components) unchanged. Inline `> **사실:**` per Ch.5–6 ### **removed** — replaced by Appendix A coverage.
