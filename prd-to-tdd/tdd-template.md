@@ -26,9 +26,10 @@ review_rounds: 0
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | ## 1. 서문 opening + Goals → [§5](#5-상위설계) diagram | ~3분 |
-| Dev | [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) tables | ~5분 |
-| 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | ~3분 |
+| PM | ## 1. 서문 opening + Goals → [§5](#5-상위설계) diagram | \~3분 |
+| Dev | [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) tables + [인수조건](#인수조건) | \~5분 |
+| QA | [§6](#6-상세설계) [인수조건](#인수조건) → [테스트](#테스트) | \~3분 |
+| 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | \~3분 |
 
 ## 1. 서문
 
@@ -65,14 +66,45 @@ flowchart LR
 
 ### 결정 요약
 
-| # | 주제 | 선택 | 상태 | 상세 |
-|---|------|------|------|------|
+| # | 주제 | 선택 | 상태 | 근거 한줄 |
+|---|------|------|------|-----------|
 | 1 | … | … | 확정 | … |
 
-> **결정:** …
-> **근거:** …
-> **코드:** …
-> **상태:** 확정
+### {{decision_topic_1}}
+
+{{1–2 sentences: why this topic matters}}
+
+| 항목 | 내용 |
+|------|------|
+| 결정 | … |
+| 상태 | 확정 |
+| 코드 | `path:line` or (Greenfield — 코드 없음) |
+
+**근거 설명:** {{≥2 sentences — why this choice; not links alone}}
+
+**참고:** [label](https://official-doc) — one-line annotation
+
+<!-- Fork example (Shape B): replace metadata table + add alternatives table -->
+
+<!--
+### {{fork_topic}}
+
+| 항목 | 내용 |
+|------|------|
+| 갈림 | … |
+| 권장 | (A) … |
+| 상태 | 권장(미확정) |
+| 코드 | … |
+
+| 대안 | 설명 | 장점 | 단점 | PRD/코드 적합도 |
+|------|------|------|------|-----------------|
+| (A) … | … | … | … | … |
+| (B) … | … | … | … | … |
+
+**권장 이유:** …
+
+**참고:** …
+-->
 
 ## 5. 상위설계
 
@@ -121,6 +153,22 @@ flowchart TD
   …
 ```
 
+### 인수조건
+
+{{≥1 sentence: AC define verifiable “done”; each row traces to PRD [source:prd#…]}}
+
+| AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
+|-------|-----|----------|----------|-----------|
+| AC-1 | [source:prd#…] | Given … When … Then … | Must | Test T-1 passes in CI |
+
+### 테스트
+
+{{≥1 sentence: test layers prove AC; brownfield cite existing test paths}}
+
+| Test ID | AC ID | Layer | 시나리오 | Fixture / Mock | CI gate |
+|---------|-------|-------|----------|----------------|---------|
+| T-1 | AC-1 | integration | … | … | yes |
+
 ## 7. 마무리
 
 ### 롤아웃·일정
@@ -137,5 +185,6 @@ flowchart TD
 | ID | 주장 | PRD | Code | External URL |
 
 ## 부록 B. Ch.4 결정 전문
-> **결정:** …
+
+{{Copy each Ch.4 `### {주제}` decision card verbatim — metadata table + prose + alternatives table if fork}}
 ```

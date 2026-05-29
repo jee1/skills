@@ -11,6 +11,8 @@ Complete this **before Phase 4 drafting**. Every row must expand into Ch.5 or Ch
 | Ch.6 entities | ≥1 per persisted object | Field names listed here become Ch.6 table rows |
 | Primary flow steps | ≥5 | Same step numbers in Ch.5 ### 데이터 흐름 and Ch.6 ### 핵심 처리 흐름 |
 | Error branches | ≥2 | Listed here; expanded in Ch.6 flow + API error table |
+| Acceptance criteria | ≥1 per functional PRD requirement (min ≥2 rows) | Verifiable pass/fail; Ch.6 ### 인수조건 |
+| Tests | ≥1 test row per AC (min ≥2 rows) | Maps AC → layer + scenario; Ch.6 ### 테스트 |
 
 ## PRD traceability
 
@@ -59,6 +61,22 @@ Every functional requirement in the PRD must map to ≥1 row below. Tag with `[s
 | Condition | HTTP / code | Handler | Retry? | PRD |
 |-----------|-------------|---------|--------|-----|
 | PG timeout | 502 + `PAYMENT_TIMEOUT` | queue retry | yes | … |
+
+## Acceptance criteria (Ch.6 ### 인수조건)
+
+Every functional PRD requirement → ≥1 AC row. Use **Given / When / Then** or an equally verifiable pass/fail statement.
+
+| AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
+|-------|-----|----------|----------|-----------|
+| AC-1 | [source:prd#…] | Given … When … Then … | Must | Test T-1 passes |
+
+## Tests (Ch.6 ### 테스트)
+
+Each AC must have ≥1 test row. Brownfield: note existing test file paths from repo.
+
+| Test ID | AC ID | Layer | 시나리오 | Fixture / Mock | CI gate |
+|---------|-------|-------|----------|----------------|---------|
+| T-1 | AC-1 | integration | … | stripe mock + test DB | yes |
 
 ## Brownfield gaps / Greenfield decisions
 

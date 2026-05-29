@@ -18,9 +18,19 @@
 
 PRD는 취소 시 자동 환불을 요구한다. 코드는 status 변경만 수행하므로 환불 연동은 미구현이다.
 
-> **결정:** 취소 API에 PaymentGateway.refund 호출을 추가한다.
-> **근거:** [source:stripe-refunds](https://stripe.com/docs/api/refunds)
-> **코드:** `src/orders/cancel_handler.ts:18` (현재 status 변경만)
+### 환불 연동
+
+취소 API는 paid 상태에서 결제 게이트웨이 환불을 호출해야 PRD cancel-flow를 충족한다.
+
+| 항목 | 내용 |
+|------|------|
+| 결정 | 취소 API에 PaymentGateway.refund 호출을 추가한다 |
+| 상태 | 확정 |
+| 코드 | `src/orders/cancel_handler.ts:18` — 현재 status 변경만 |
+
+**근거 설명:** Stripe Refunds API는 payment_intent 기준 환불을 지원하며, paid 주문 row에 payment_intent_id가 이미 저장되어 있다. status-only cancel은 PRD §cancel-flow의 “paid 시 자동 환불” 요구를 만족하지 못한다.
+
+**참고:** [Stripe Refunds API](https://stripe.com/docs/api/refunds) — payment_intent 기준 환불 생성
 ```
 
 **Why good:** Ch.3 establishes code reality; Ch.4 first mentions PRD gap; no "as above".
@@ -56,11 +66,21 @@ PRD는 취소 시 자동 환불을 요구한다. 코드는 status 변경만 수�
 
 ## 4. 설계 결정
 
-요약: PRD의 REST API 요구에 맞춰 express 라우터 구조를 채택한다.
+PRD의 REST API 요구에 맞춰 express 라우터 구조를 채택한다.
 
-> **결정:** Express 4 기반 단일 API 프로세스로 시작한다.
-> **근거:** [source:express-routing](https://expressjs.com/en/guide/routing.html)
-> **코드:** (Greenfield — 코드 없음)
+### API 런타임
+
+Greenfield이므로 PRD stack 제약과 공식 문서 기준으로 단일 프로세스 API를 선택한다.
+
+| 항목 | 내용 |
+|------|------|
+| 결정 | Express 4 기반 단일 API 프로세스로 시작한다 |
+| 상태 | 확정 |
+| 코드 | (Greenfield — 코드 없음) |
+
+**근거 설명:** `package.json`에 express 4.x가 이미 선언되어 있어 추가 런타임 도입 없이 PRD REST endpoint를 구현할 수 있다. 단일 프로세스는 MVP 배포·관측 경로를 단순화한다.
+
+**참고:** [Express Routing](https://expressjs.com/en/guide/routing.html) — 라우터·미들웨어 패턴
 ```
 
 **Why good:** Ch.3 honest empty state; Ch.4 decisions with official URL; no fictional modules.
@@ -98,16 +118,25 @@ First line = PM; rest = dev.
 ```markdown
 ## 4. 설계 결정
 
-요약: 저장소는 PostgreSQL과 MongoDB가 모두 가능하나, 트랜잭션 요구로 PostgreSQL을 권장한다.
+PRD는 주문·재고·결제 간 일관성을 요구한다. 문서 DB와 RDBMS 모두 기술적으로 가능하나 트랜잭션 모델이 다르다.
 
-PRD는 주문·재고·결제 간 일관성을 요구한다. 스키마 유연성만으로는 이 요구를 충족하기 어렵다.
+### Primary datastore
 
-> **갈림:** Primary datastore
-> **대안:** (A) PostgreSQL — ACID 트랜잭션 (B) MongoDB — 문서 기반 유연 스키마
-> **권장:** (A) PostgreSQL — PRD의 cross-entity 트랜잭션 요구
-> **근거:** [source:postgresql-transactions](https://www.postgresql.org/docs/current/tutorial-transactions.html)
-> **코드:** (Greenfield — 코드 없음)
-> **상태:** 권장(미확정)
+| 항목 | 내용 |
+|------|------|
+| 갈림 | Primary datastore |
+| 권장 | (A) PostgreSQL |
+| 상태 | 권장(미확정) |
+| 코드 | (Greenfield — 코드 없음) |
+
+| 대안 | 설명 | 장점 | 단점 | PRD/코드 적합도 |
+|------|------|------|------|-----------------|
+| (A) PostgreSQL | 관계형 RDBMS | ACID 트랜잭션, JOIN | 스키마 변경 비용 | 높음 — cross-entity 트랜잭션 요구 |
+| (B) MongoDB | 문서 DB | 스키마 유연 | 멀ti-doc 트랜잭션 제약 | 낮음 — 주문·재고 동시 갱신 |
+
+**권장 이유:** PRD는 주문 생성 시 재고 차감과 결제 상태를 하나의 유닛으로 처리하도록 명시한다. PostgreSQL 단일 트랜잭션으로 이 흐름을 직접 표현할 수 있다.
+
+**참고:** [PostgreSQL Transactions](https://www.postgresql.org/docs/current/tutorial-transactions.html) — ACID 보장 범위
 
 ## 5. 상위설계
 
@@ -155,12 +184,17 @@ PostgreSQL `orders` / `items` draft …
 ```markdown
 ## 4. 설계 결정
 
-PostgreSQL 또는 MongoDB를 사용할 수 있다. MongoDB로 진행한다.
+| 항목 | 내용 |
+|------|------|
+| 결정 | MongoDB |
+| 상태 | 확정 |
 
-> **결정:** MongoDB
+**근거 설명:** (missing — URL only)
+
+**참고:** PRD
 ```
 
-**Violations:** other viable option ignored without `**갈림:**`; no rationale for rejecting PostgreSQL when PRD implies transactions.
+**Violations:** other viable option ignored; Tier-1 without official URL in **참고:**; **근거 설명:** absent or not prose.
 
 ---
 
@@ -169,10 +203,19 @@ PostgreSQL 또는 MongoDB를 사용할 수 있다. MongoDB로 진행한다.
 ```markdown
 ## 4. 설계 결정
 
-> **결정:** Redis를 캐시로 사용한다.
+### 캐시
+
+| 항목 | 내용 |
+|------|------|
+| 결정 | Redis를 캐시로 사용한다 |
+| 상태 | 확정 |
+
+**근거 설명:** 빠르다.
+
+**참고:** https://redis.io/docs/
 ```
 
-**Violation:** when Kafka/RabbitMQ were equally viable and PRD silent — should be `**갈림:**` or user confirm first.
+**Violation:** when Kafka/RabbitMQ were equally viable and PRD silent — should be Shape B fork or user confirm first; **근거 설명:** too thin.
 
 ---
 
@@ -261,11 +304,24 @@ PostgreSQL 또는 MongoDB를 사용할 수 있다. MongoDB로 진행한다.
 - PaymentGateway timeout → enqueue retry job, return 502 PAYMENT_TIMEOUT; client may retry with Idempotency-Key
 - InventoryService.release failure → rollback refund (compensating call), return 500 INVENTORY_RELEASE_FAILED; no status change
 
-> **사실:** PG timeout 시 retry queue에 refund job을 적재한다.
-> **근거:** [source:prd#cancel-flow] + `src/orders/cancel_handler.ts:18`
+### 인수조건
+
+AC rows state verifiable done criteria so QA can judge implementation completeness without reading code.
+
+| AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
+|-------|-----|----------|----------|-----------|
+| AC-1 | [source:prd#cancel-flow] | Given paid order, When POST cancel, Then refund + status=cancelled | Must | T-1 CI green |
+| AC-2 | [source:prd#cancel-flow] | Given cancelled order, When POST cancel, Then 409 and no second refund | Must | T-2 CI green |
+
+### 테스트
+
+| Test ID | AC ID | Layer | 시나리오 | Fixture / Mock | CI gate |
+|---------|-------|-------|----------|----------------|---------|
+| T-1 | AC-1 | integration | paid cancel happy path | stripe mock | yes |
+| T-2 | AC-2 | unit | duplicate cancel conflict | OrderService fixture | yes |
 ```
 
-**Why good:** every ### has 요약 + depth; components labeled; API + error tables; ≥2 error branches; Ch.5 names reused in Ch.6.
+**Why good:** every ### has lead prose + depth; components labeled; API + error tables; ≥2 error branches; AC + tests prove done; Ch.5 names reused in Ch.6.
 
 ---
 
@@ -296,7 +352,7 @@ Client → ApiServer → DB
 Health check returns 200.
 ```
 
-**Violations:** no 요약; <2 components with names; 1-line data flow; no API table; no error branches; no `[ref:A-n]` / Appendix A; happy-path only.
+**Violations:** no 요약; <2 components with names; 1-line data flow; no API table; no error branches; no ### 인수조건 or ### 테스트; no `[ref:A-n]` / Appendix A; happy-path only.
 
 ---
 

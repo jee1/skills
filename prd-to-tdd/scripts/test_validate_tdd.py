@@ -34,9 +34,9 @@ MINIMAL_NARRATIVE_BODY = """
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | ## 1. 서문 opening → Ch.5 diagram | ~3분 |
-| Dev | Ch.4 → Ch.6 tables | ~5분 |
-| Audit | Ch.4 결정 요약 → Appendix A | ~3분 |
+| PM | ## 1. 서문 opening → Ch.5 diagram | \\~3분 |
+| Dev | Ch.4 → Ch.6 tables | \\~5분 |
+| Audit | Ch.4 결정 요약 → Appendix A | \\~3분 |
 
 ## 1. 서문
 
@@ -88,7 +88,7 @@ Pending orders continue to skip refund and only transition status with inventory
 
 This direction preserves existing auth boundaries and adds a new PaymentGateway adapter module.
 Staging will validate timeout handling before the feature flag enables production traffic.
-Audit readers can trace the refund decision in the summary table and Appendix B block below.
+Audit readers can trace the refund decision in the summary table and Appendix B decision card.
 
 ```mermaid
 flowchart LR
@@ -98,14 +98,23 @@ flowchart LR
 
 ### 결정 요약
 
-| # | 주제 | 선택 | 상태 | 상세 |
-|---|------|------|------|------|
-| 1 | Refund | PaymentGateway.refund | 확정 | block below |
+| # | 주제 | 선택 | 상태 | 근거 한줄 |
+|---|------|------|------|-----------|
+| 1 | Refund | PaymentGateway.refund | 확정 | Stripe refund API matches paid cancel PRD requirement |
 
-> **결정:** Add PaymentGateway.refund to cancel flow for paid orders.
-> **근거:** https://example.com/docs/refunds
-> **코드:** `src/orders/cancel_handler.ts:18`
-> **상태:** 확정
+### 환불 연동
+
+Paid cancel must invoke PaymentGateway.refund before inventory release to satisfy PRD cancel-flow.
+
+| 항목 | 내용 |
+|------|------|
+| 결정 | Add PaymentGateway.refund to cancel flow for paid orders |
+| 상태 | 확정 |
+| 코드 | `src/orders/cancel_handler.ts:18` — status-only cancel today |
+
+**근거 설명:** The Stripe Refunds API creates refunds against payment_intent identifiers already stored on paid order rows. Status-only cancel leaves PRD refund orchestration unimplemented and forces manual dashboard refunds in operations.
+
+**참고:** [Stripe Refunds API](https://example.com/docs/refunds) — payment_intent refund creation semantics
 
 Brownfield teams will ship the adapter behind cancel_refund_enabled after staging soak time.
 
@@ -219,6 +228,24 @@ flowchart TD
 - PaymentGateway timeout → enqueue retry job, return 502 PAYMENT_TIMEOUT
 - InventoryService.release failure → compensating refund attempt, return 500 INVENTORY_RELEASE_FAILED
 
+### 인수조건
+
+Acceptance criteria define when cancel-with-refund is done for PM, QA, and audit readers. Each row maps to PRD cancel-flow and names the test that proves completion in CI before rollout.
+
+| AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
+|-------|-----|----------|----------|-----------|
+| AC-1 | [source:prd#cancel-flow] | Given a paid order, When POST /orders/{id}/cancel, Then PaymentGateway.refund is called and status becomes cancelled | Must | T-1 passes in CI |
+| AC-2 | [source:prd#cancel-flow] | Given an already cancelled order, When POST cancel again, Then HTTP 409 ALREADY_CANCELLED and no second refund | Must | T-2 passes in CI |
+
+### 테스트
+
+Integration tests exercise HTTP boundaries with stripe mock and test DB, while unit tests cover OrderService branching without external IO. Every AC below has a merge-blocking CI gate before production traffic uses cancel_refund_enabled.
+
+| Test ID | AC ID | Layer | 시나리오 | Fixture / Mock | CI gate |
+|---------|-------|-------|----------|----------------|---------|
+| T-1 | AC-1 | integration | paid cancel triggers refund and inventory release | `tests/integration/cancel.test.ts` + stripe mock | yes |
+| T-2 | AC-2 | unit | duplicate cancel returns conflict without refund | OrderService fixture | yes |
+
 ## 7. 마무리
 
 ### 롤아웃·일정
@@ -243,10 +270,19 @@ Staging validation for one week, then production with cancel_refund_enabled flag
 
 ## 부록 B. Ch.4 결정 전문
 
-> **결정:** Add PaymentGateway.refund to cancel flow for paid orders.
-> **근거:** https://example.com/docs/refunds
-> **코드:** `src/orders/cancel_handler.ts:18`
-> **상태:** 확정
+### 환불 연동
+
+Paid cancel must invoke PaymentGateway.refund before inventory release to satisfy PRD cancel-flow.
+
+| 항목 | 내용 |
+|------|------|
+| 결정 | Add PaymentGateway.refund to cancel flow for paid orders |
+| 상태 | 확정 |
+| 코드 | `src/orders/cancel_handler.ts:18` — status-only cancel today |
+
+**근거 설명:** The Stripe Refunds API creates refunds against payment_intent identifiers already stored on paid order rows. Status-only cancel leaves PRD refund orchestration unimplemented and forces manual dashboard refunds in operations.
+
+**참고:** [Stripe Refunds API](https://example.com/docs/refunds) — payment_intent refund creation semantics
 """
 
 
@@ -307,6 +343,23 @@ class TestNarrativeProfile(unittest.TestCase):
             errors = v.validate(path, strict=True, narrative=True)
             codes = [e.code for e in errors]
             self.assertIn("ch1-nested-frontmatter", codes)
+        finally:
+            path.unlink()
+
+
+    def test_unescaped_tilde_fails(self):
+        doc = FRONTMATTER + MINIMAL_NARRATIVE_BODY.replace(
+            "B2C web shop",
+            "B2C web shop (A~Z scope)",
+            1,
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
+            f.write(doc)
+            path = Path(f.name)
+        try:
+            errors = v.validate(path, strict=False, narrative=False)
+            codes = [e.code for e in errors]
+            self.assertIn("unescaped-tilde", codes)
         finally:
             path.unlink()
 

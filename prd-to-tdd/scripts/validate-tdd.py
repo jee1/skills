@@ -58,6 +58,8 @@ CH6_SUBSECTIONS = [
     r"###\s+API\s+및\s+인터페이스",
     r"###\s+데이터\s+모델",
     r"###\s+핵심\s+처리\s+흐름",
+    r"###\s+인수\s*조건",
+    r"###\s+테스트",
 ]
 
 CH7_SUBSECTIONS = [
@@ -124,6 +126,16 @@ MIN_DATA_FLOW_STEPS = 3
 MIN_API_TABLE_DATA_ROWS = 3
 MIN_ENTITY_FIELD_ROWS = 3
 MIN_ERROR_BRANCH_LINES = 2
+MIN_AC_TABLE_ROWS = 2
+MIN_TEST_TABLE_ROWS = 2
+AC_ID = re.compile(r"\bAC-\d+\b", re.I)
+TEST_ID = re.compile(r"\bT-\d+\b", re.I)
+TEST_LAYER = re.compile(r"\b(unit|integration|e2e|integ)\b", re.I)
+PRD_ANCHOR = re.compile(r"\[source:prd[#:\w-]*\]|source:prd#", re.I)
+VERIFIABLE_AC = re.compile(
+    r"Given|When|Then|조건|인\s*경우|때|하면|must|should|returns|반환|status\s*=",
+    re.I,
+)
 
 YOAK_PATTERN = re.compile(r"요약\s*:")
 COMPONENT_BULLET = re.compile(r"^[-*]\s+\*\*([^*]+)\*\*", re.M)
@@ -145,6 +157,16 @@ FORK_BLOCK = re.compile(
     r"(?:>\s*\*\*[^\n]*\n)*?",
     re.M,
 )
+
+# Decision card format (Ch.4 Tier-1)
+MIN_RATIONALE_CHARS = 80
+DECISION_CARD_META = re.compile(r"\|\s*결정\s*\|", re.I)
+FORK_CARD_META = re.compile(r"\|\s*갈림\s*\|", re.I)
+RATIONALE_LABEL = re.compile(r"\*\*근거\s+설명:\*\*", re.I)
+RECOMMEND_REASON_LABEL = re.compile(r"\*\*권장\s+이유:\*\*", re.I)
+REFERENCE_LABEL = re.compile(r"\*\*참고:\*\*", re.I)
+ALT_TABLE_HEADER = re.compile(r"\|\s*대안\s*\|[^\n]*장점[^\n]*단점", re.I)
+ALT_TABLE_ROW = re.compile(r"^\|\s*\([A-C]\)", re.M)
 
 
 class ValidationError:
@@ -215,6 +237,35 @@ def check_forbidden_phrases(body: str) -> list[ValidationError]:
                 errors.append(
                     ValidationError(i, code, f"Forbidden back-reference phrase: {line.strip()[:80]}")
                 )
+    return errors
+
+
+def _strip_fenced_code(text: str) -> str:
+    """Remove fenced code block contents but keep newlines so line numbers stay aligned."""
+
+    def replacer(match: re.Match[str]) -> str:
+        block = match.group(0)
+        return "\n" * block.count("\n")
+
+    return re.sub(r"```.*?```", replacer, text, flags=re.S)
+
+
+UNESCAPED_TILDE = re.compile(r"(?<!\\)~")
+
+
+def check_unescaped_tilde(body: str) -> list[ValidationError]:
+    """Bare ~ in prose/tables pairs with later ~ and renders strikethrough; require \\~."""
+    errors: list[ValidationError] = []
+    scrubbed = _strip_fenced_code(body)
+    for i, line in enumerate(scrubbed.splitlines(), start=1):
+        if UNESCAPED_TILDE.search(line):
+            errors.append(
+                ValidationError(
+                    i,
+                    "unescaped-tilde",
+                    "Escape literal ~ as \\~ (e.g. A\\~Z, \\~3분) — bare ~ pairs across the doc as strikethrough",
+                )
+            )
     return errors
 
 
@@ -478,6 +529,8 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
         (r"###\s+API\s+및\s+인터페이스", "ch6-api"),
         (r"###\s+데이터\s+모델", "ch6-data-model"),
         (r"###\s+핵심\s+처리\s+흐름", "ch6-flow"),
+        (r"###\s+인수\s*조건", "ch6-ac"),
+        (r"###\s+테스트", "ch6-tests"),
     ]
 
     for chapter, checks in ((ch5, ch5_checks), (ch6, ch6_checks)):
@@ -578,6 +631,92 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
                     )
                 )
 
+    ac_line, ac_sec = _subsection_content(ch6, r"###\s+인수\s*조건")
+    ac_rows = _count_table_data_rows(ac_sec)
+    if ac_rows < MIN_AC_TABLE_ROWS:
+        errors.append(
+            ValidationError(
+                ac_line,
+                "ch6-ac-thin",
+                f"Ch.6 ### 인수조건 needs AC table with ≥{MIN_AC_TABLE_ROWS} data rows",
+            )
+        )
+    if ac_sec and not PRD_ANCHOR.search(ac_sec):
+        errors.append(
+            ValidationError(
+                ac_line,
+                "ch6-ac-no-prd",
+                "Ch.6 ### 인수조건 must trace rows to PRD ([source:prd#…])",
+            )
+        )
+    ac_ids = set(AC_ID.findall(ac_sec))
+    if ac_sec and len(ac_ids) < MIN_AC_TABLE_ROWS:
+        errors.append(
+            ValidationError(
+                ac_line,
+                "ch6-ac-id-missing",
+                f"Ch.6 ### 인수조건 needs ≥{MIN_AC_TABLE_ROWS} AC IDs (AC-1, AC-2, …)",
+            )
+        )
+    verifiable_rows = sum(1 for line in ac_sec.splitlines() if VERIFIABLE_AC.search(line))
+    if ac_sec and verifiable_rows < MIN_AC_TABLE_ROWS:
+        errors.append(
+            ValidationError(
+                ac_line,
+                "ch6-ac-not-verifiable",
+                "Ch.6 ### 인수조건 rows need verifiable conditions (Given/When/Then or measurable pass/fail)",
+            )
+        )
+
+    test_line, test_sec = _subsection_content(ch6, r"###\s+테스트")
+    test_rows = _count_table_data_rows(test_sec)
+    if test_rows < MIN_TEST_TABLE_ROWS:
+        errors.append(
+            ValidationError(
+                test_line,
+                "ch6-test-thin",
+                f"Ch.6 ### 테스트 needs test table with ≥{MIN_TEST_TABLE_ROWS} data rows",
+            )
+        )
+    test_ids = set(TEST_ID.findall(test_sec))
+    if test_sec and len(test_ids) < MIN_TEST_TABLE_ROWS:
+        errors.append(
+            ValidationError(
+                test_line,
+                "ch6-test-id-missing",
+                f"Ch.6 ### 테스트 needs ≥{MIN_TEST_TABLE_ROWS} Test IDs (T-1, T-2, …)",
+            )
+        )
+    test_ac_refs = set(AC_ID.findall(test_sec))
+    if ac_ids and test_sec:
+        orphan_refs = test_ac_refs - ac_ids
+        if orphan_refs:
+            errors.append(
+                ValidationError(
+                    test_line,
+                    "ch6-test-ac-orphan",
+                    f"Test table references unknown AC IDs: {', '.join(sorted(orphan_refs))}",
+                )
+            )
+        uncovered = ac_ids - test_ac_refs
+        if uncovered:
+            errors.append(
+                ValidationError(
+                    test_line,
+                    "ch6-ac-untested",
+                    f"Each AC needs ≥1 test row; missing tests for: {', '.join(sorted(uncovered))}",
+                )
+            )
+    layer_rows = sum(1 for line in test_sec.splitlines() if TEST_LAYER.search(line))
+    if test_sec and layer_rows < MIN_TEST_TABLE_ROWS:
+        errors.append(
+            ValidationError(
+                test_line,
+                "ch6-test-layer-missing",
+                "Ch.6 ### 테스트 rows must specify layer (unit / integration / e2e)",
+            )
+        )
+
     return errors
 
 
@@ -609,16 +748,16 @@ def check_design_subsections(body: str) -> list[ValidationError]:
 
 
 def check_ch4_ch6_sources(body: str) -> list[ValidationError]:
-    """Ch.4 should contain Tier-1 source blocks when it has substance."""
+    """Ch.4 should contain Tier-1 decision cards or legacy source blocks when it has substance."""
     errors: list[ValidationError] = []
-    ch4 = _chapter_slice(body, r"^##\s+4\.\s+", r"^##\s+5\.\s+")
+    ch4 = _ch4_slice(body)
 
-    if len(ch4.strip()) >= 80 and not SOURCE_BLOCK.search(ch4):
+    if len(ch4.strip()) >= 80 and not _ch4_has_tier1_markers(ch4):
         errors.append(
             ValidationError(
                 0,
                 "source-block-missing",
-                "Ch.4 has content but no > **결정:** / **갈림:** source blocks",
+                "Ch.4 has content but no decision cards (| 결정 | / | 갈림 |) or legacy > **결정:** blocks",
             )
         )
     return errors
@@ -731,6 +870,145 @@ def check_tier1_decisions(body: str, mode: str) -> list[ValidationError]:
     return errors
 
 
+def _ch4_slice(body: str) -> str:
+    return _chapter_slice(body, r"^##\s+4\.\s+", r"^##\s+5\.\s+")
+
+
+def _iter_ch4_decision_sections(ch4: str) -> list[tuple[int, str, str]]:
+    """Return (line_num, title, content) for each ### in Ch.4 except 결정 요약."""
+    results: list[tuple[int, str, str]] = []
+    for match in re.finditer(r"^###\s+(.+)$", ch4, re.M):
+        title = match.group(1).strip()
+        if re.match(r"결정\s+요약", title):
+            continue
+        line_num = ch4[: match.start()].count("\n") + 1
+        start = match.end()
+        next_header = re.search(r"^###\s+|^##\s+", ch4[start:], re.M)
+        end = start + next_header.start() if next_header else len(ch4)
+        results.append((line_num, title, ch4[start:end]))
+    return results
+
+
+def _prose_after_label(section: str, label: re.Pattern[str]) -> str:
+    match = label.search(section)
+    if not match:
+        return ""
+    rest = section[match.end() :]
+    stop = re.search(r"\n\*\*[^*]+:\*\*|\n###|\n```", rest)
+    return (rest[: stop.start()] if stop else rest).strip()
+
+
+def _ch4_has_tier1_markers(ch4: str) -> bool:
+    if re.search(r"^\s*>\s*\*\*(결정|갈림):\*\*", ch4, re.M):
+        return True
+    return bool(DECISION_CARD_META.search(ch4) or FORK_CARD_META.search(ch4))
+
+
+def check_ch4_decision_cards(body: str, mode: str) -> list[ValidationError]:
+    """Validate readable decision cards in Ch.4 (metadata table + prose rationale)."""
+    errors: list[ValidationError] = []
+    ch4 = _ch4_slice(body)
+    if not ch4.strip():
+        return errors
+
+    for line_num, _title, content in _iter_ch4_decision_sections(ch4):
+        is_fork = bool(FORK_CARD_META.search(content))
+        is_decision = bool(DECISION_CARD_META.search(content))
+        if not is_fork and not is_decision:
+            continue
+
+        if not REFERENCE_LABEL.search(content):
+            errors.append(
+                ValidationError(
+                    line_num,
+                    "decision-card-no-reference",
+                    "Decision card missing **참고:** with official URL(s)",
+                )
+            )
+        elif not OFFICIAL_URL.search(content):
+            errors.append(
+                ValidationError(
+                    line_num,
+                    "decision-card-no-official-url",
+                    "Decision card **참고:** missing official https URL",
+                )
+            )
+
+        if is_decision:
+            rationale = _prose_after_label(content, RATIONALE_LABEL)
+            if not RATIONALE_LABEL.search(content):
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "decision-card-no-rationale",
+                        "Shape A card missing **근거 설명:** prose (not URL-only)",
+                    )
+                )
+            elif len(re.sub(r"\s+", " ", rationale)) < MIN_RATIONALE_CHARS:
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "decision-card-rationale-thin",
+                        f"**근거 설명:** needs ≥{MIN_RATIONALE_CHARS} chars of prose explaining why",
+                    )
+                )
+            if mode == "brownfield" and re.search(r"\|\s*코드\s*\|", content, re.I):
+                if "Greenfield" not in content and not re.search(r"`[^`]+\.[a-zA-Z0-9]+:\d+", content):
+                    errors.append(
+                        ValidationError(
+                            line_num,
+                            "decision-card-code-ref",
+                            "Brownfield decision card should include code path:line in metadata table",
+                        )
+                    )
+
+        if is_fork:
+            if not RECOMMEND_REASON_LABEL.search(content):
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "fork-card-no-recommend-reason",
+                        "Shape B fork card missing **권장 이유:** prose",
+                    )
+                )
+            else:
+                reason = _prose_after_label(content, RECOMMEND_REASON_LABEL)
+                if len(re.sub(r"\s+", " ", reason)) < MIN_RATIONALE_CHARS:
+                    errors.append(
+                        ValidationError(
+                            line_num,
+                            "fork-card-recommend-thin",
+                            f"**권장 이유:** needs ≥{MIN_RATIONALE_CHARS} chars explaining why the recommendation wins",
+                        )
+                    )
+            if not ALT_TABLE_HEADER.search(content):
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "fork-card-no-alt-table",
+                        "Shape B fork card missing alternatives comparison table (| 대안 | … | 장점 | 단점 |)",
+                    )
+                )
+            elif len(ALT_TABLE_ROW.findall(content)) < 2:
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "fork-card-alt-rows",
+                        "Alternatives table needs ≥2 rows labeled (A), (B), …",
+                    )
+                )
+            if "**상태:**" not in content and not re.search(r"\|\s*상태\s*\|", content, re.I):
+                errors.append(
+                    ValidationError(
+                        line_num,
+                        "fork-card-no-status",
+                        "Fork card missing status (metadata table | 상태 | or **상태:**)",
+                    )
+                )
+
+    return errors
+
+
 def _body_before_appendices(body: str) -> str:
     match = APPENDIX_A_HEADER.search(body)
     if match:
@@ -777,10 +1055,10 @@ def _appendix_citation_checks(body: str, ch4: str, ch5: str, ch6: str) -> list[V
                     )
                 )
 
-    ch4_has_blockquote = bool(re.search(r"^\s*>\s*\*\*(결정|갈림):\*\*", ch4, re.M)) if ch4 else False
-    if ch4_has_blockquote and not APPENDIX_B_HEADER.search(body):
+    ch4_has_tier1 = _ch4_has_tier1_markers(ch4) if ch4 else False
+    if ch4_has_tier1 and not APPENDIX_B_HEADER.search(body):
         errors.append(
-            ValidationError(0, "appendix-b-missing", "Ch.4 has blockquotes but ## 부록 B is missing")
+            ValidationError(0, "appendix-b-missing", "Ch.4 has decision cards but ## 부록 B is missing")
         )
     return errors
 
@@ -887,6 +1165,8 @@ def check_narrative(body: str) -> list[ValidationError]:
             (r"###\s+API\s+및\s+인터페이스", "API 및 인터페이스"),
             (r"###\s+데이터\s+모델", "데이터 모델"),
             (r"###\s+핵심\s+처리\s+흐름", "핵심 처리 흐름"),
+            (r"###\s+인수\s*조건", "인수조건"),
+            (r"###\s+테스트", "테스트"),
         ):
             line_num, content = _subsection_content(ch6, pattern)
             if not content:
@@ -951,8 +1231,10 @@ def validate(path: Path, *, strict: bool = True, narrative: bool = False, readab
 
     errors.extend(check_chapters(body, mode))
     errors.extend(check_forbidden_phrases(body))
+    errors.extend(check_unescaped_tilde(body))
     errors.extend(check_design_subsections(body))
     errors.extend(check_ch4_ch6_sources(body))
+    errors.extend(check_ch4_decision_cards(body, mode))
     errors.extend(check_fork_blocks(body, mode))
     errors.extend(check_tier1_decisions(body, mode))
     errors.extend(check_pending_open_questions(body))

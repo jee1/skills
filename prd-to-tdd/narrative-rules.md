@@ -13,7 +13,7 @@ Detail rules for Ch.5–6: [design-sections.md](design-sections.md).
 | 3. 현재 시스템 / 시작점 | 承 | What exists today (code or scaffold) |
 | 4. 갭과 설계 전환 / 설계 결정 | 转 | Gap → why change; Tier-1 decisions |
 | 5. 상위설계 | 结 (macro) | Target architecture as a consequence of Ch.4 |
-| 6. 상세설계 | 结 (micro) | Spec tables grounded in Ch.5 names |
+| 6. 상세설계 | 结 (micro) | Spec tables, **acceptance criteria**, **tests** grounded in Ch.5 names |
 | 7. 마무리 | 结 (close) | Rollout, risks, open questions |
 
 ## 6하원칙 (embedded in prose — no labels)
@@ -27,7 +27,7 @@ Answer each dimension **inside normal sentences**. Never prefix lines with `Who:
 | 3 | What exists, how it works today |
 | 4 | What changes, why, how (direction) |
 | 5 | What the target system does, how at high level |
-| 6 | What interfaces/entities exist, how in detail |
+| 6 | What interfaces/entities exist, how in detail; **what proves done** (AC + tests) |
 | 7 | When rollout, how to deploy, remaining risks |
 
 **Minimum:** Ch.2, Ch.3, Ch.4 each **≥8 sentences** of non-table body (enforced by `--narrative`).
@@ -48,7 +48,7 @@ Forbidden: temporal back-refs (`앞서`, `위에서`, `see above`) — **restate
 | `요약:` line prefix | Topic `###` titles (e.g. `### API 및 인터페이스`) |
 | `#### 한눈에` | Ch.4 `### 결정 요약` (audit index table only) |
 | `### TL;DR` in body | `## 목차`, `## 이 문서 읽는 법`, Ch.1 `### Goals / Non-Goals` |
-| `Who:` / `Why:` / `누가:` / `왜:` … | `[ref:A-n]`, Ch.4 Tier-1 blockquotes |
+| `Who:` / `Why:` / `누가:` / `왜:` … | `[ref:A-n]`, Ch.4 Tier-1 decision cards |
 
 ## Prose-then-table (Ch.5–6)
 
@@ -104,8 +104,8 @@ Use the decision tree in Phase 3 outline (unchanged):
 
 | Situation | Ch.4 format | Ch.5–6 | Ch.7 |
 |-----------|-------------|--------|------|
-| Single clear winner | `> **결정:**` | Follows decision | Standard |
-| Real fork | `> **갈림:**` + `권장(미확정)` | Follows **권장** | 열린 질문 |
+| Single clear winner | Shape A decision card | Follows decision | Standard |
+| Real fork | Shape B + alternatives table + `권장(미확정)` | Follows **권장** | 열린 질문 |
 | Tier-1 high impact | Ask user first | After confirm | Standard |
 
 Ch.5–6 follow **one** narrative path (권장 or 확정). Component **names** first appear in Ch.5 prose; Ch.6 reuses them.
@@ -113,10 +113,26 @@ Ch.5–6 follow **one** narrative path (권장 or 확정). Component **names** f
 ## Outline Self-Check (before drafting)
 
 - [ ] Concept introduction order (outline rows)
-- [ ] Ch.5 ≥2 component names; Ch.6 APIs/entities/flows mapped
+- [ ] Ch.5 ≥2 component names; Ch.6 APIs/entities/flows/AC/tests mapped
 - [ ] Bridge plan: last line of Ch.2→3, 3→4, 4→5 sketched
 - [ ] Tier-1 in Ch.4; user confirm for `needs-user-confirm`
 - [ ] No chapter depends on a later chapter
+
+## Markdown — literal tilde (`~`)
+
+Many Markdown renderers treat **unescaped** `~` as strikethrough delimiters and pair them across the document. A range like `A~Z` early in the file can turn everything until the next bare `~` (e.g. `~3분` in a table) into strikethrough.
+
+**Rule:** Any tilde meant to appear as text must be written **`\\~`** (backslash + tilde).
+
+| Use case | Write | Do not write |
+|----------|-------|--------------|
+| Range | `A\\~Z`, `1\\~5`, `v1\\~v2` | `A~Z` |
+| Approximation | `\\~3분`, `\\~100ms` | `~3분` |
+| Version span | `Node 18\\~20` | `Node 18~20` |
+
+**Does not apply inside** fenced code blocks (`` ``` ``) — use normal `~` there.
+
+Enforced by `validate-tdd.py` (`unescaped-tilde`).
 
 ## Common Violations
 
@@ -126,3 +142,4 @@ Ch.5–6 follow **one** narrative path (권장 or 확정). Component **names** f
 | `#### 한눈에` bullets repeating the section | One clear prose paragraph; tables hold spec |
 | Ch.5 names a service never mentioned in Ch.4 | Ch.4 states the gap/decision that introduces the service |
 | Telegraphic Ch.2 (“PRD requires X.”) | Full paragraph: who is affected, where in product, why it matters |
+| `A~Z`, `~3분` in prose/tables | `A\\~Z`, `\\~3분` |

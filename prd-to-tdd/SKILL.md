@@ -63,7 +63,7 @@ Extract: `feature_slug`, title, requirements, constraints, PRD section anchors f
 
 **Tools:** Serena first (`get_symbols_overview`, `find_symbol`, `find_referencing_symbols`); full repo scope.
 
-Build internal **analysis notes** (do not save as TDD): entry points, modules, data stores, integrations, `path:line` refs.
+Build internal **analysis notes** (do not save as TDD): entry points, modules, data stores, integrations, `path:line` refs, **existing test layout** (unit/integration/e2e paths, frameworks, CI commands).
 
 ### Mode detection
 
@@ -86,8 +86,8 @@ Before prose, write an outline using [outline-template.md](outline-template.md) 
 
 1. Concepts in **introduction order** (no use before define)
 2. Tier-1 topics for Ch.4, each tagged:
-   - `single` — one clear choice → use `> **결정:**`
-   - `multi-recommend` — real fork → use `> **갈림:**` + `> **권장:**` + `> **상태:** 권장(미확정)`
+   - `single` — one clear choice → decision card Shape A ([citation-tiers.md](citation-tiers.md))
+   - `multi-recommend` — real fork → Shape B + `상태: 권장(미확정)`
    - `needs-user-confirm` — Tier-1 high impact → **ask user before Ch.4** (see below)
 3. Brownfield: PRD↔code gap list | Greenfield: PRD→decision list
 4. **Ch.5–6 mapping tables (required):**
@@ -95,6 +95,8 @@ Before prose, write an outline using [outline-template.md](outline-template.md) 
    - APIs/events (≥1 per user-facing action)
    - Entities (≥1 per persisted object, field names listed)
    - Primary flow (≥5 steps) + error branches (≥2)
+   - Acceptance criteria (≥1 per functional PRD requirement; min ≥2 rows)
+   - Tests (≥1 per AC; min ≥2 rows with layer + CI gate)
 
 Self-check against [narrative-rules.md](narrative-rules.md) outline checklist and [design-sections.md](design-sections.md) depth rubric.
 
@@ -107,13 +109,13 @@ Self-check against [narrative-rules.md](narrative-rules.md) outline checklist an
 **How:** One message per fork (or one message listing all forks). For each:
 
 - Topic name
-- 2–3 **대안** with one-line trade-off each
-- **권장** + short rationale
+- 2–3 **대안** each with: 한 줄 설명 + 장점/단점 + PRD/코드 적합도
+- **권장** + **권장 이유** (≥2 sentences, not URL-only)
 - Ask user to pick or confirm recommendation
 
-**Do not** draft Ch.4–5 for that topic until answered. After answer, tag as `single` and use `> **결정:**` + `> **상태:** 확정`.
+**Do not** draft Ch.4–5 for that topic until answered. After answer, rewrite as Shape A with `상태: 확정`.
 
-If user defers (“나중에”), keep `> **갈림:**` + `> **상태:** 권장(미확정)` and add Ch.7 **열린 질문**.
+If user defers (“나중에”), keep Shape B with `상태: 권장(미확정)` and add Ch.7 **열린 질문**.
 
 ---
 
@@ -123,19 +125,20 @@ If user defers (“나중에”), keep `> **갈림:**` + `> **상태:** 권장(�
 2. Create `docs/design/` if missing
 3. Write **one chapter at a time** in fixed order (1 → 7)
 4. **Expand every Phase 3 outline row** into ≥1 sentence or table row in the mapped ### subsection — no orphan rows, no empty subsections
-5. Ch.4: `**결정:**` or `**갈림:**` blocks from [citation-tiers.md](citation-tiers.md)
+5. Ch.4: decision cards (Shape A/B) from [citation-tiers.md](citation-tiers.md) — metadata table + **근거 설명** + **참고**; forks add alternatives table + **권장 이유**
 6. Ch.5 **상위설계**: lead prose (≥2 sentences per ###) then mermaid/lists; ≥2 components; ≥3 flow steps
-7. Ch.6 **상세설계**: lead prose (≥1 sentence per ###) then tables; optional dev index table after chapter intro; ≥2 error branches; Ch.5 names in Ch.6; `[ref:A-n]` not inline blockquotes
+7. Ch.6 **상세설계**: lead prose (≥1 sentence per ###) then tables; optional dev index table after chapter intro; ≥2 error branches; Ch.5 names in Ch.6; **### 인수조건** (PRD→AC, verifiable pass/fail) + **### 테스트** (AC→test cases, layers, CI gate); `[ref:A-n]` not inline blockquotes
 8. Ch.7 **마무리**: rollout, risks table, 열린 질문 (for each Ch.4 `권장(미확정)`)
 9. Front matter: `## 목차` → `## 이 문서 읽는 법` → `## 1. 서문` (opening + Goals only)
 10. Ch.2–4: ≥8 sentences each in **2–4 paragraphs** (blank line between paragraphs)
 11. Ch.4: mermaid transition diagram before `### 결정 요약`
 12. Ch.5: mermaid in ### 아키텍처 개요 and ### 데이터 흐름
-13. Ch.6: mermaid flowchart in ### 핵심 처리 흐름 (error branches)
+13. Ch.6: mermaid flowchart in ### 핵심 처리 흐름 (error branches); ### 인수조건 + ### 테스트 after flow
 14. Ch.4: `### 결정 요약` table (only allowed “summary” heading in body)
 15. Ch.5: **no** `요약:` / `#### 한눈에`
 16. Write ## 부록 A and ## 부록 B after Ch.7
-17. Ch.2–4: embed 6하 in prose; chapter bridges (see narrative-rules.md)
+17. Ch.2–4: embed 6ha in prose; chapter bridges (see narrative-rules.md)
+18. Literal tilde in TDD body (ranges, approximations): write `\~` — e.g. `A\~Z`, `\~3분`. Bare `~` pairs with a later `~` and renders strikethrough (see narrative-rules.md)
 
 Filename: `docs/design/YYYY-MM-DD-<feature_slug>-tdd.md`
 
@@ -143,7 +146,7 @@ Filename: `docs/design/YYYY-MM-DD-<feature_slug>-tdd.md`
 
 ## Phase 5 — Script Validation
 
-Run the validator from this skill package (repo: `skills/prd-to-tdd/`, installed: `~/.cursor/skills/prd-to-tdd/`):
+Run the validator from this skill package (repo: `skills/prd-to-tdd/`; installed symlinks: `~/.cursor/skills/prd-to-tdd/`, `~/.codex/skills/prd-to-tdd/`, `~/.agents/skills/prd-to-tdd/`):
 
 ```bash
 python scripts/validate-tdd.py docs/design/YYYY-MM-DD-<feature>-tdd.md
@@ -183,6 +186,7 @@ Confirm file at `docs/design/YYYY-MM-DD-<feature>-tdd.md`.
 Tell user:
 - Path, mode, validation status, review rounds
 - Ch.4: **확정** vs **권장(미확정)** forks
+- Ch.6: AC count + test coverage summary (which ACs have CI-gated tests)
 - Ch.5–6: one-line summary of architecture + key APIs
 - Open questions from Ch.7
 

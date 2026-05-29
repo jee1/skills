@@ -52,6 +52,33 @@ Each `###` opens with **≥1 lead sentence**, then tables. Drill down into Ch.5 
 
 - Happy path + ≥2 error/retry branches; same component names as Ch.5
 
+### 인수조건
+
+- Lead prose: AC are the **verifiable definition of done**; without them, implementation completeness cannot be judged
+- Table: one row per functional PRD requirement (minimum ≥2 rows for strict profile)
+- Each AC must be **objectively pass/fail** — use **Given / When / Then** or equivalent measurable criteria
+- **완료 판정** column states how completion is verified (test ID, manual QA step, metric threshold)
+- Tier-2: `[ref:A-n]` when citing PRD anchors; PRD column uses `[source:prd#…]`
+
+**Required table schema:**
+
+| AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
+|-------|-----|----------|----------|-----------|
+| AC-1 | [source:prd#…] | Given … When … Then … | Must / Should | Test T-1 passes |
+
+### 테스트
+
+- Lead prose: which test layers (unit / integration / e2e) prove which ACs; brownfield: cite repo test conventions (`path` from Phase 2)
+- Table: ≥1 test row per AC (minimum ≥2 rows for strict profile)
+- **Layer** must be one of: `unit`, `integration`, `e2e` (or repo-equivalent)
+- **CI gate** column: `yes` if merge-blocking, `no` if manual-only
+
+**Required table schema:**
+
+| Test ID | AC ID | Layer | 시나리오 | Fixture / Mock | CI gate |
+|---------|-------|-------|----------|----------------|---------|
+| T-1 | AC-1 | integration | … | … | yes |
+
 ---
 
 ## Chapter 7 — 마무리 (required ### subsections)
@@ -82,6 +109,8 @@ No new Tier-1 decisions in Ch.7 unless escalated as open question.
 | HTTP path + body fields | | ✓ |
 | “PaymentService handles refunds” | ✓ | |
 | Refund API request JSON | | ✓ |
+| Acceptance criteria (Given/When/Then) | | ✓ |
+| Test cases mapped to AC | | ✓ |
 | Tier-1 architecture fork | Ch.4 only | |
 
 ---
@@ -95,6 +124,8 @@ For each feature, outline must list (see [outline-template.md](outline-template.
 - [ ] Entities for Ch.6 data model
 - [ ] Primary flow for Ch.5 data flow + Ch.6 detail
 - [ ] ≥2 error branches mapped to Ch.6
+- [ ] Acceptance criteria: ≥1 row per functional PRD requirement (outline → Ch.6 ### 인수조건)
+- [ ] Tests: ≥1 row per AC with layer + CI gate (outline → Ch.6 ### 테스트)
 
 **Phase 4 gate:** Do not draft until outline row counts meet minimums in outline-template.md.
 
@@ -126,6 +157,8 @@ Default validation is **strict**. Use `python scripts/validate-tdd.py --lenient`
 | **API 및 인터페이스** | ≥1 lead sentence + API table (≥3 data rows) + error table when HTTP |
 | **데이터 모델** | ≥1 lead sentence + entity table (≥3 field rows) |
 | **핵심 처리 흐름** | ≥1 lead sentence + happy path + ≥2 error/retry branches |
+| **인수조건** | ≥1 lead sentence + AC table (≥2 rows); each row has AC ID + PRD + verifiable condition + 완료 판정 |
+| **테스트** | ≥1 lead sentence + test table (≥2 rows); each row maps Test ID → AC ID + layer + CI gate |
 
 ### Required table schemas
 
@@ -167,11 +200,11 @@ See [examples.md](examples.md) § Ch.5–6 depth for full good/bad excerpts.
 | Ch.2–4 | Each ≥8 sentences; **2–4 paragraphs** (blank lines); bridges Ch.2→3, 3→4, 4→5 |
 | Ch.4 | ` ```mermaid ` transition before `### 결정 요약`; summary table ≥1 row |
 | Ch.5 | mermaid in ### 아키텍처 개요 + ### 데이터 흐름; ≥2 lead sentences per ### |
-| Ch.6 | mermaid in ### 핵심 처리 흐름 (branching); ≥1 lead sentence per ### |
+| Ch.6 | mermaid in ### 핵심 처리 흐름 (branching); ### 인수조건 + ### 테스트 tables; ≥1 lead sentence per ### |
 | Ch.2–7 | No `요약:`, `#### 한눈에`, 6하 labels |
 | Doc | ≥40 non-table sentences total |
 | Ch.5–6 | No `> **사실:**`; use `[ref:A-n]` |
-| Appendices | A required; B when Ch.4 has blockquotes |
+| Appendices | A required; B when Ch.4 has decision cards |
 
 `--readability` is deprecated; prints warning and runs `--narrative`.
 
