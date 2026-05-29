@@ -189,8 +189,9 @@ Tell user:
 - Ch.6: AC count + test coverage summary (which ACs have CI-gated tests)
 - Ch.5–6: one-line summary of architecture + key APIs
 - Open questions from Ch.7
+- Optional next step (mention only): run **`tdd-to-tasks`** skill → `docs/tasks/YYYY-MM-DD-<feature>-tasks.md`
 
-**STOP.** Do not offer implementation, tasks, or `writing-plans` unless user asks separately.
+**STOP.** Do not run `tdd-to-tasks`, implementation, or `writing-plans` unless user asks separately.
 
 ---
 

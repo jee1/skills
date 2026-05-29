@@ -7,6 +7,7 @@ Cursor Agent Skills maintained in this repository.
 | Skill | Description |
 |-------|-------------|
 | [prd-to-tdd](prd-to-tdd/) | PRD + codebase → TDD (7 chapters: 상위설계, 상세설계, 마무리) |
+| [tdd-to-tasks](tdd-to-tasks/) | Validated TDD → implementation tasks (RTM, AC/Test traceability) |
 
 ## Install (Cursor)
 
@@ -52,6 +53,8 @@ skills/
    ```bash
    python prd-to-tdd/scripts/validate-tdd.py docs/design/2026-05-25-sample-order-cancel-tdd.md
    # strict (default) enforces Ch.5–6 depth; add --lenient for legacy drafts
+   python tdd-to-tasks/scripts/validate-tasks.py docs/tasks/YYYY-MM-DD-feature-tasks.md \
+     --tdd docs/design/YYYY-MM-DD-feature-tdd.md
    ```
 
 Design spec for `prd-to-tdd`: [docs/superpowers/specs/2026-05-25-prd-to-tdd-skill-design.md](docs/superpowers/specs/2026-05-25-prd-to-tdd-skill-design.md). Strict depth profile: [docs/superpowers/specs/2026-05-25-prd-to-tdd-strict-depth-design.md](docs/superpowers/specs/2026-05-25-prd-to-tdd-strict-depth-design.md).
