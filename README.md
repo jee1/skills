@@ -39,9 +39,11 @@ ls -la ~/.cursor/skills/prd-to-tdd/SKILL.md
 skills/
 ├── README.md
 ├── prd-to-tdd/           # Skill package (SKILL.md + references + scripts)
+├── tdd-to-tasks/         # TDD → tasks skill + validate-tasks.py
 └── docs/
     ├── superpowers/specs/   # Design specs
-    └── design/              # Sample / reference TDD outputs
+    ├── design/              # Sample / reference TDD outputs
+    └── tasks/               # Sample / reference task lists
 ```
 
 ## Maintaining a skill
@@ -53,8 +55,8 @@ skills/
    ```bash
    python prd-to-tdd/scripts/validate-tdd.py docs/design/2026-05-25-sample-order-cancel-tdd.md
    # strict (default) enforces Ch.5–6 depth; add --lenient for legacy drafts
-   python tdd-to-tasks/scripts/validate-tasks.py docs/tasks/YYYY-MM-DD-feature-tasks.md \
-     --tdd docs/design/YYYY-MM-DD-feature-tdd.md
+   python tdd-to-tasks/scripts/validate-tasks.py docs/tasks/2026-05-25-sample-order-cancel-tasks.md \
+     --tdd docs/design/2026-05-25-sample-order-cancel-tdd.md
    ```
 
 Design spec for `prd-to-tdd`: [docs/superpowers/specs/2026-05-25-prd-to-tdd-skill-design.md](docs/superpowers/specs/2026-05-25-prd-to-tdd-skill-design.md). Strict depth profile: [docs/superpowers/specs/2026-05-25-prd-to-tdd-strict-depth-design.md](docs/superpowers/specs/2026-05-25-prd-to-tdd-strict-depth-design.md).

@@ -1,6 +1,7 @@
 # Examples — order-cancel (excerpt)
 
-Source TDD (hypothetical Ch.6 AC/test rows): `docs/design/2026-05-25-sample-order-cancel-tdd.md`
+Source TDD: `docs/design/2026-05-25-sample-order-cancel-tdd.md`  
+Sample tasks: `docs/tasks/2026-05-25-sample-order-cancel-tasks.md`
 
 ## RTM excerpt
 

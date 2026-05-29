@@ -26,9 +26,9 @@ review_rounds: 0
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | ## 1. 서문 opening + Goals → [§5](#5-상위설계) diagram | ~3분 |
-| Dev | [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) dev index + tables | ~5분 |
-| 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | ~3분 |
+| PM | ## 1. 서문 opening + Goals → [§5](#5-상위설계) diagram | \~3분 |
+| Dev | [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) dev index + tables | \~5분 |
+| 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | \~3분 |
 
 ## 1. 서문
 
@@ -63,9 +63,9 @@ status enum은 pending, paid, shipped, delivered, cancelled 다섯 값으로 정
 
 ## 4. 갭과 설계 전환
 
-PRD는 paid 상태 취소 시 환불을 필수로 요구하지만, 현재 OrderService.cancel은 status 변경만 수행한다. 재고 복구와 Idempotency-Key 전파도 PRD cancel-flow와 일치하지 않는다. 따라서 PaymentGateway.refund 연동과 InventoryService.release 호출을 OrderService orchestration에 추가해야 한다.
+PRD는 paid 상태 취소 시 환불을 필수로 요구하지만, 현재 OrderService.cancel은 status 변경만 수행한다. 재고 복구와 Idempotency-Key 전파도 PRD cancel-flow와 일치하지 않는다. 따라서 PaymentGateway.refund 연동과 InventoryService.release 호출을 OrderService cancel orchestration에 추가해야 한다.
 
-Stripe refund API는 payment_intent_id 기준이며, timeout 시 retry queue에 job을 적재하는 패턴을 채택한다 [ref:A-3]. PG timeout 시 클라이언트는 동일 Idempotency-Key로 안전하게 재시도할 수 있어야 한다. InventoryService.release 실패 시에는 compensating refund로 데이터 정합성을 유지한다.
+Stripe refund API는 payment_intent_id 기준이며, timeout 시 retry queue에 job을 적재하는 패턴을 채택한다 [ref:A-3]. PG timeout 시 클라이언트는 동일 Idempotency-Key로 안전하게 재시도할 수 있어야 한다. InventoryService.release 실패 시에는 compensating refund 호출로 데이터 정합성을 반드시 유지한다.
 
 brownfield 제약 하에 CancelHandler와 OrderService, InventoryService는 기존 모듈을 확장하고 PaymentGateway만 신규 추가한다. Ch.5 상위설계는 이 결정을 API → Service → External 3계층 구조로 구체화한다.
 
@@ -196,6 +196,26 @@ flowchart TD
 - **InventoryService**.release failure → compensating refund call, return 500 INVENTORY_RELEASE_FAILED; no status change
 
 PG timeout 시 retry queue에 refund job을 적재한다 [ref:A-8].
+
+### 인수조건
+
+인수조건(AC)은 구현 완료 여부를 객관적으로 판단하는 기준이다. paid 취소·Idempotency·PG timeout 세 축은 PRD cancel-flow와 직접 연결되며, 각 AC는 Ch.6 테스트 또는 명시된 manual QA로 증명한다 [ref:A-5].
+
+| AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
+|-------|-----|----------|----------|-----------|
+| AC-1 | [source:prd#cancel-flow] | Given paid 주문 When cancel 호출 Then Stripe refund 후 재고 release, status=cancelled | Must | Test T-1 passes |
+| AC-2 | [source:prd#cancel-flow] | Given 동일 Idempotency-Key When cancel 재시도 Then 동일 200 body, 중복 refund 없음 | Must | Test T-2 passes |
+| AC-3 | [source:prd#cancel-flow] | Given PG timeout When cancel Then 502 PAYMENT_TIMEOUT, 주문 status 변경 없음 | Should | Test T-3 passes (manual staging) |
+
+### 테스트
+
+Brownfield 기준 integration test는 `tests/integration/`에서 Stripe mock과 DB fixture를 사용한다. Must AC에 연결된 T-1·T-2는 merge blocking CI gate로 등록하고, Should AC(T-3)는 staging manual gate로 둔다 [ref:A-6].
+
+| Test ID | AC ID | Layer | 시나리오 | Fixture / Mock | CI gate |
+|---------|-------|-------|----------|----------------|---------|
+| T-1 | AC-1 | integration | paid cancel → refund + inventory | stripe mock, orders seed | yes |
+| T-2 | AC-2 | integration | same Idempotency-Key twice | redis idempotency store | yes |
+| T-3 | AC-3 | integration | PaymentGateway timeout | stripe timeout stub | no |
 
 ## 7. 마무리
 

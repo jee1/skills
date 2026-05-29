@@ -26,9 +26,9 @@ review_rounds: 0
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | ## 1. 서문 opening + Goals → [§5](#5-상위설계) mermaid | ~3분 |
-| Dev | [§4](#4-설계-결정) 결정 요약 → [§6](#6-상세설계) 스펙 표 | ~5분 |
-| 감사 | [§4](#4-설계-결정) 갈림 block → [부록 A](#부록-a-출처코드-위치) | ~3분 |
+| PM | ## 1. 서문 opening + Goals → [§5](#5-상위설계) mermaid | \~3분 |
+| Dev | [§4](#4-설계-결정) 결정 요약 → [§6](#6-상세설계) 스펙 표 | \~5분 |
+| 감사 | [§4](#4-설계-결정) 갈림 block → [부록 A](#부록-a-출처코드-위치) | \~3분 |
 
 ## 1. 서문
 
@@ -191,6 +191,24 @@ flowchart TD
 **Errors:**
 - Validation failure → 400 VALIDATION_ERROR before **ItemRepository** call
 - **PostgreSQL** unique violation on sku → 409 DUPLICATE_SKU; transaction rollback
+
+### 인수조건
+
+AC는 items CRUD v1의 완료 정의이다. create happy path와 sku 중복 거부는 PRD items 요구의 최소 단위이며, 각 Must AC는 integration test로 증명하고 health endpoint smoke는 별도 CI job으로 유지한다 [ref:A-4].
+
+| AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
+|-------|-----|----------|----------|-----------|
+| AC-1 | [source:prd#items] | Given valid POST body When create Then 201 + persisted row in items | Must | Test T-1 passes |
+| AC-2 | [source:prd#items] | Given duplicate sku When create Then 409 DUPLICATE_SKU, no partial row | Must | Test T-2 passes |
+
+### 테스트
+
+Greenfield harness는 `tests/integration/`에 supertest + testcontainers PostgreSQL을 사용한다. Must AC(T-1, T-2)는 CI merge gate에 포함하며, PR merge 전 `npm run test:integration`이 green이어야 한다 [ref:A-5].
+
+| Test ID | AC ID | Layer | 시나리오 | Fixture / Mock | CI gate |
+|---------|-------|-------|----------|----------------|---------|
+| T-1 | AC-1 | integration | POST /items happy path | testcontainers PG | yes |
+| T-2 | AC-2 | integration | duplicate sku insert | seeded sku row | yes |
 
 ## 7. 마무리
 
