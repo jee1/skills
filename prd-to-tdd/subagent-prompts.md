@@ -1,8 +1,13 @@
 # Subagent Prompt Templates
 
-Spawn **all three in parallel** after `validate-tdd.py` passes. Use `readonly: true` where supported.
+After `validate-tdd.py` strict (+ `--narrative` when used) passes, pick **one** Phase 6 path — see [SKILL.md](SKILL.md) Phase 6 and [dual-brain-integration.md](dual-brain-integration.md):
 
-Merge output; any **Critical** finding blocks completion until fixed (max 2 full cycles).
+| Path | When | Spawn |
+|------|------|-------|
+| **Mode A (default)** | `dual-brain` skill not on disk, or user did not request compact review | §1–3 **in parallel** |
+| **Mode B (compact)** | `dual-brain/SKILL.md` exists **and** user asked dual-brain or prefers compact review | §4 first (sequential), then §1 only if narrative doubt |
+
+Use `readonly: true` where supported. Merge output; any **Critical** finding blocks completion until fixed (max 2 full cycles).
 
 ## Severity Definitions
 
@@ -59,15 +64,18 @@ Checklist:
 17. Ch.6 ### 테스트: ≥2 test rows mapping Test ID → AC ID + layer (unit/integration/e2e) + CI gate; every AC has ≥1 test.
 18. Every Ch.5 component **Name** appears in Ch.6; no field-level detail in Ch.5; no new Ch.6 component absent from Ch.5.
 19. Brownfield: each component bullet has (신규) or (기존).
-18. Front matter H2: ## 목차 → ## 이 문서 읽는 법 → ## 1. 서문 (opening + Goals; no ### 목차 in Ch.1).
-19. Ch.2–4 each ≥8 prose sentences in ≥2 paragraphs (blank lines between paragraphs).
-20. Ch.4 mermaid transition before ### 결정 요약; Ch.5 data-flow mermaid; Ch.6 flow mermaid with branches.
-21. Ch.2–4 bridges Ch.2→3, 3→4, 4→5 feel causal when read in order.
-22. Ch.4 has ### 결정 요약 table aligned with decision cards below.
-23. Ch.5 ### 아키텍처 개요 contains ```mermaid`; each Ch.5 ### has ≥2 lead sentences before structure.
-24. Ch.6 each ### has ≥1 lead sentence before tables; no > **사실:** in Ch.5–6; Tier-2 uses [ref:A-n]; Appendix A/B complete.
-25. Qualitative: reads like one story front-to-back; no telegraphic fragments a new teammate could not follow.
-26. Literal tilde in body prose/tables uses \\~ (e.g. A\\~Z, \\~3분); no bare ~ outside code fences — prevents strikethrough pairing.
+20. Ch.2: every **Must** `FR-*` in #### 기능 요구 (FR) has a row in #### 추적성 매트릭스 (RTM) and ≥1 `AC-*` in Ch.6 ### 인수조건 (via RTM or explicit FR reference).
+21. Ch.2 `OQ-*` in #### 모호·충돌·미결 each appears in Ch.7 ### 열린 질문.
+22. Front matter H2: ## 목차 → ## 이 문서 읽는 법 → ## 1. 서문 (opening + Goals; no ### 목차 in Ch.1).
+23. Ch.2–4 each ≥8 prose sentences in ≥2 paragraphs (blank lines between paragraphs).
+24. Ch.4 mermaid transition before ### 결정 요약; Ch.5 data-flow mermaid; Ch.6 flow mermaid with branches.
+25. Ch.2–4 bridges Ch.2→3, 3→4, 4→5 feel causal when read in order.
+26. Ch.4 has ### 결정 요약 table aligned with decision cards below.
+27. Ch.5 ### 아키텍처 개요 contains ```mermaid`; each Ch.5 ### has ≥2 lead sentences before structure.
+28. Ch.6 each ### has ≥1 lead sentence before tables; no > **사실:** in Ch.5–6; Tier-2 uses [ref:A-n]; Appendix A/B complete.
+29. Qualitative: reads like one story front-to-back; no telegraphic fragments a new teammate could not follow.
+30. Literal tilde in body prose/tables uses \\~ (e.g. A\\~Z, \\~3분); no bare ~ outside code fences — prevents strikethrough pairing.
+31. Do not re-check items already enforced by `validate-tdd.py --narrative` unless the script passed with semantic doubt (e.g. bridge feels weak, RTM looks complete but AC conditions are vague).
 
 Return ONLY findings in format:
 severity | chapter:line | issue | fix
@@ -91,7 +99,7 @@ You are the citation-reviewer for a Technical Design Document (TDD).
 Read the TDD draft, citation-tiers.md, and the source PRD text.
 
 Checklist:
-1. Every technical claim in Ch.4–6 has traceability (Tier-1 cards or Tier-2 [ref:A-n]).
+1. Every technical claim in Ch.2–6 has traceability (Ch.2 FR/RTM `[source:prd#…]`; Ch.4–6 Tier-1 cards or Tier-2 [ref:A-n]).
 2. Tier-1 topics use decision cards (citation-tiers.md):
    - Shape A: metadata table with | 결정 | + **근거 설명:** (prose, not URL-only) + **참고:** (official URL + per-link annotation) + code row
    - Shape B: metadata table with | 갈림 | + alternatives comparison table (≥2 rows) + **권장 이유:** + **참고:** + **상태:**
@@ -147,14 +155,94 @@ If no issues: return "PASS"
 
 ---
 
+## 4. left-brain-verification-reviewer (Mode B only)
+
+**Tool:** Task `generalPurpose` or `cavecrew-reviewer`, `readonly: true`
+
+**When:** `dual-brain` skill installed; replaces citation-reviewer + code-grounding-reviewer in one pass.
+
+**Prompt:**
+
+```
+You are the left-brain-verification-reviewer for a Technical Design Document (TDD).
+
+Combine citation + code-grounding checks. Read dual-brain/SKILL.md Left Brain persona if available;
+otherwise follow this checklist strictly.
+
+Read: TDD draft, citation-tiers.md, source PRD, repository (respect frontmatter mode: brownfield | greenfield).
+
+Citation checklist:
+1. Ch.2–6 claims traceable (FR/RTM [source:prd#…]; Ch.4–6 Tier-1 cards or Tier-2 [ref:A-n]).
+2. Tier-1 decision cards: Shape A/B per citation-tiers.md; **참고:** has official URL + annotation; fork cards have alternatives + **권장 이유:**.
+3. No Tier-1 backed only by blog/community without official URL.
+4. PRD anchors match actual PRD section/content.
+5. Ch.6 ### 인수조건: verifiable Given/When/Then; Ch.6 ### 테스트 maps every AC to ≥1 test + layer + CI gate.
+
+Code-grounding checklist:
+6. Code-first: PRD vs code conflict → TDD sides with code; gap labeled.
+7. Brownfield Ch.3: As-Is traceable to path:line; **코드:** row in decision cards plausible.
+8. Greenfield Ch.3: no fictional services; Tier-1 may omit code when marked (Greenfield — 코드 없음).
+9. Ch.5–6 target state only; component/API names in Ch.6 appear in Ch.5 first.
+10. "미구현" / "PRD-only" where PRD items absent in code (brownfield).
+
+Do not re-litigate items already enforced by validate-tdd.py unless semantic doubt.
+
+Return ONLY findings in format:
+severity | chapter:line | issue | fix
+
+If no issues: return "PASS"
+```
+
+**Attach:** TDD file, PRD text or path, `citation-tiers.md`, repo root, mode from frontmatter; optional `dual-brain/SKILL.md`
+
+---
+
+## 5. narrative-reviewer (optional in Mode B)
+
+Same prompt as §1. **Spawn when:**
+
+- Mode A: always (parallel with §2–3)
+- Mode B: only if `--narrative` passed **but** bridges, AC wording, or story flow still feel weak after script pass
+
+If Mode B and script narrative checks are clean with no doubt: **skip** §5.
+
+---
+
 ## Spawn Pattern (orchestrator)
+
+### Mode A — Default (dual-brain not required)
 
 ```
 Parallel Task calls:
-1. narrative-reviewer  — prompt above + TDD + narrative-rules.md
-2. citation-reviewer   — prompt above + TDD + PRD + citation-tiers.md
-3. code-grounding-reviewer — prompt above + TDD + repo
+1. narrative-reviewer       — §1 + TDD + narrative-rules.md
+2. citation-reviewer        — §2 + TDD + PRD + citation-tiers.md
+3. code-grounding-reviewer  — §3 + TDD + repo
 
-If any Critical → edit TDD → validate-tdd.py → re-spawn (review_rounds += 1)
+If any Critical → edit TDD → validate-tdd.py (strict + --narrative) → re-spawn
 Max 2 rounds total for script + subagents cycle.
+
+Phase 7 report: validation: script + 3 reviewers (default)
+```
+
+### Mode B — Compact (dual-brain installed)
+
+```
+Probe ~/.cursor|~/.codex|~/.agents/skills/dual-brain/SKILL.md — if missing, use Mode A.
+
+Sequential:
+1. left-brain-verification-reviewer — §4 + TDD + PRD + citation-tiers.md + repo
+
+Optional (parallel with nothing else required):
+2. narrative-reviewer — §1 only if semantic doubt after --narrative pass
+
+If any Critical → edit TDD → validate-tdd.py → re-spawn (same max 2 rounds)
+
+Phase 7 report: validation: script + dual-brain compact (left-brain [+ narrative])
+```
+
+### dual-brain unavailable
+
+```
+Do not simulate Right/Left Brain personas. Use Mode A only.
+Tell user once in Phase 7: dual-brain: not installed — default reviewers
 ```

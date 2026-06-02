@@ -67,6 +67,42 @@ The PRD document defines cancel-flow steps and inventory restoration as mandator
 This feature affects checkout, order history, and customer service dashboards equally.
 Engineering will implement cancel as an orchestrated server-side workflow rather than a UI-only change.
 
+### 요구사항 분석
+
+The following tables refine PRD cancel-flow into traceable requirement IDs before we compare the codebase in the next chapter.
+Each Must functional requirement will later map to acceptance criteria and CI-gated tests in the detailed design chapter.
+
+#### 기능 요구 (FR)
+
+| FR ID | PRD | 요구 설명 (shall) | 우선순위 | 구현 상태 | 비고 |
+|-------|-----|-------------------|----------|-----------|------|
+| FR-1 | [source:prd#cancel-flow] | Paid orders shall trigger a full refund before status moves to cancelled | Must | 미구현 | Ch.4 gap |
+| FR-2 | [source:prd#cancel-flow] | Cancel shall restore inventory for all line items after successful cancel | Must | 미구현 | Inventory path |
+| FR-3 | [source:prd#idempotency] | Duplicate cancel with the same Idempotency-Key shall not double-refund | Must | 부분 | Header not forwarded |
+
+#### 비기능 요구 (NFR)
+
+| NFR ID | PRD | 요구 | 목표치 | 검증 방법 (개략) |
+|--------|-----|------|--------|------------------|
+| NFR-1 | [source:prd#auth] | Cancel API requires JWT bearer authentication | Enforced on every request | Integration test with 401 |
+
+#### 제약·가정·의존성
+
+| 유형 | ID | 내용 | 영향 |
+|------|-----|------|------|
+| 제약 | CON-1 | Scope is B2C web order API only | Excludes admin bulk cancel |
+| 가정 | ASM-1 | Stripe payment_intent_id is stored on paid orders | Refund integration |
+
+#### 추적성 매트릭스 (RTM)
+
+| PRD 앵커 | REQ ID | (예정) AC ID | 설계 반영 (Ch.5–6) | 테스트 |
+|----------|--------|--------------|-------------------|--------|
+| [source:prd#cancel-flow] | FR-1 | AC-1 | PaymentGateway.refund on paid branch | T-1 |
+| [source:prd#cancel-flow] | FR-2 | AC-2 | InventoryService.release after refund | T-2 |
+| [source:prd#idempotency] | FR-3 | AC-3 | Idempotency-Key forwarded, no double refund | T-3 |
+
+The FR implementation status column is validated against the current system description in the following chapter.
+
 ## 3. 현재 시스템
 
 The order service exposes POST /orders/{id}/cancel for authenticated shoppers today.
@@ -236,6 +272,7 @@ Acceptance criteria define when cancel-with-refund is done for PM, QA, and audit
 |-------|-----|----------|----------|-----------|
 | AC-1 | [source:prd#cancel-flow] | Given a paid order, When POST /orders/{id}/cancel, Then PaymentGateway.refund is called and status becomes cancelled | Must | T-1 passes in CI |
 | AC-2 | [source:prd#cancel-flow] | Given an already cancelled order, When POST cancel again, Then HTTP 409 ALREADY_CANCELLED and no second refund | Must | T-2 passes in CI |
+| AC-3 | [source:prd#idempotency] | Given the same Idempotency-Key, When POST cancel is retried, Then the same 200 body and no second refund | Must | T-3 passes in CI |
 
 ### 테스트
 
@@ -245,6 +282,7 @@ Integration tests exercise HTTP boundaries with stripe mock and test DB, while u
 |---------|-------|-------|----------|----------------|---------|
 | T-1 | AC-1 | integration | paid cancel triggers refund and inventory release | `tests/integration/cancel.test.ts` + stripe mock | yes |
 | T-2 | AC-2 | unit | duplicate cancel returns conflict without refund | OrderService fixture | yes |
+| T-3 | AC-3 | integration | same Idempotency-Key twice, no double refund | redis idempotency store | yes |
 
 ## 7. 마무리
 
@@ -284,6 +322,35 @@ Paid cancel must invoke PaymentGateway.refund before inventory release to satisf
 
 **참고:** [Stripe Refunds API](https://example.com/docs/refunds) — payment_intent refund creation semantics
 """
+
+
+class TestRequirementTraceability(unittest.TestCase):
+    def test_must_fr_missing_from_rtm_fails(self):
+        doc = FRONTMATTER + MINIMAL_NARRATIVE_BODY.replace(
+            "| [source:prd#idempotency] | FR-3 | AC-3 | Idempotency-Key forwarded, no double refund | T-3 |\n",
+            "",
+        )
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
+            f.write(doc)
+            path = Path(f.name)
+        try:
+            errors = v.validate(path, strict=True)
+            codes = [e.code for e in errors]
+            self.assertIn("must-fr-rtm-missing", codes)
+        finally:
+            path.unlink()
+
+    def test_sample_order_cancel_passes_traceability(self):
+        sample = Path(__file__).resolve().parents[2] / "docs/design/2026-05-25-sample-order-cancel-tdd.md"
+        if not sample.is_file():
+            self.skipTest("sample TDD not in repo")
+        errors = v.validate(sample, strict=True, narrative=True)
+        codes = [e.code for e in errors]
+        self.assertEqual(
+            [],
+            [c for c in codes if c.startswith("must-fr") or c.startswith("oq-ch7")],
+            [str(e) for e in errors],
+        )
 
 
 class TestStrictSourcePolicy(unittest.TestCase):

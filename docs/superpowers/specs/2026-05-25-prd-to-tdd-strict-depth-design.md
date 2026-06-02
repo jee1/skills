@@ -28,7 +28,7 @@ Adopt **strict profile (A)** as default validation:
 
 | Check | Minimum |
 |-------|---------|
-| ### 요약: | Every Ch.5–6 subsection |
+| Lead prose | Every Ch.5–6 ### opens with ≥2 (Ch.5) / ≥1 (Ch.6) sentences — **no** `요약:` prefix (`narrative-rules.md`) |
 | Subsection length | 120 chars |
 | Source block | Per substantive ### |
 | Ch.5 components | ≥2 named, brownfield (신규/기존) |

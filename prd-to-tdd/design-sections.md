@@ -1,14 +1,65 @@
-# Design Sections — 상위설계 & 상세설계
+# Design Sections — 요구사항 분석, 상위설계 & 상세설계
 
-Chapters **5–7** deliver the target (To-Be) design after context (1–3) and decisions (4).
+Chapters **2 (요구사항 분석)**, **5–7** structure *what* to build before *how* (4) and *how in detail* (6).
 
 | Chapter | Name | Level | Reader |
 |---------|------|-------|--------|
+| **2** (###) | 요구사항 분석 | Requirements | PM, PO, lead, audit |
 | **5** | 상위설계 | High-level | PM + dev + audit |
 | **6** | 상세설계 | Low-level | Dev + audit |
 | **7** | 마무리 | Closure | All |
 
 **Forward-only rule:** Ch.5 names components and boundaries first; Ch.6 specifies interfaces and schemas for **those same components** — do not introduce a new major component in Ch.6 without introducing it in Ch.5.
+
+---
+
+## 요구사항 분석 vs 인수조건
+
+| | Ch.2 `### 요구사항 분석` | Ch.6 `### 인수조건` |
+|--|-------------------------|---------------------|
+| Purpose | PRD 정제·분류·충돌·모호성·RTM | 완료의 객관적 판정 |
+| ID | `FR-*`, `NFR-*`, `CON-*`, … | `AC-*` |
+| Form | REQ tables + RTM | Given / When / Then |
+| When | Before Ch.4 design forks | After Ch.5 component names exist |
+
+Every **Must** `FR-*` → ≥1 RTM row → ≥1 `AC-*` in Ch.6 → ≥1 `T-*` in Ch.6 ### 테스트.
+
+---
+
+## Chapter 2 — `### 요구사항 분석` (required)
+
+Placed **after** Ch.2 background prose (≥8 sentences, 2–4 paragraphs), **before** `## 3.`.
+
+### Lead prose
+
+- ≥2 sentences before the first table
+- Last sentence must bridge to Ch.3 (e.g. FR **구현 상태** will be checked against code in the next chapter)
+
+### Required blocks
+
+| Block | Heading | Minimum (strict) |
+|-------|---------|------------------|
+| Functional | `#### 기능 요구 (FR)` | FR table ≥2 data rows; each row has `FR-n` + `[source:prd#…]` |
+| Traceability | `#### 추적성 매트릭스 (RTM)` | ≥2 data rows linking PRD → REQ ID → (AC TBD or AC-n) |
+| Non-functional | `#### 비기능 요구 (NFR)` | ≥1 row when PRD states NFR; else one prose sentence “NFR: none in PRD scope” |
+| Constraints | `#### 제약·가정·의존성` | ≥1 row when PRD has constraints; else omit table + one sentence |
+| Open items | `#### 모호·충돌·미결` | Required when ambiguity exists; `OQ-*` must appear in Ch.7 ### 열린 질문 |
+
+### Brownfield — `구현 상태` column (FR table)
+
+| Value | Meaning |
+|-------|---------|
+| 구현됨 | Code satisfies FR |
+| 부분 | Some paths only |
+| 미구현 | PRD requires, code lacks |
+| PRD-only | In PRD, not in code (first labeled here, expanded in Ch.4) |
+| 코드-only(문서화) | In code, not in PRD |
+
+Greenfield: omit **구현 상태** column or use `N/A`.
+
+### Phase 3
+
+Copy [outline-template.md](outline-template.md) **Requirements inventory** into Ch.2 during Phase 4; do not invent FR IDs only in Ch.6.
 
 ---
 
@@ -119,6 +170,7 @@ No new Tier-1 decisions in Ch.7 unless escalated as open question.
 
 For each feature, outline must list (see [outline-template.md](outline-template.md)):
 
+- [ ] Requirements inventory (FR, NFR, RTM, open items) → Ch.2 ### 요구사항 분석
 - [ ] Components to introduce in Ch.5 (names fixed before Ch.6)
 - [ ] APIs/events for Ch.6
 - [ ] Entities for Ch.6 data model

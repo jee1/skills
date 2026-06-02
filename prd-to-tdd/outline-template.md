@@ -20,6 +20,49 @@ Every functional requirement in the PRD must map to ≥1 row below. Tag with `[s
 
 ---
 
+## Requirements inventory (Ch.2 ### 요구사항 분석)
+
+Complete before Ch.4 drafting. IDs here become Ch.2 tables; AC IDs filled in Phase 4 Ch.6.
+
+| Type | Minimum | Rule |
+|------|---------|------|
+| FR rows | ≥2 (≥1 per functional PRD requirement) | `FR-1`, `FR-2`, …; each has `[source:prd#…]` |
+| NFR rows | ≥1 when PRD mentions performance/security/availability | `NFR-1`, … |
+| CON/ASM/DEP | ≥1 row total when constraints exist in PRD | `CON-*`, `ASM-*`, `DEP-*` |
+| RTM rows | ≥2 | Every Must FR → ≥1 RTM row; AC ID may be `TBD` until Ch.6 |
+
+### Functional requirements (FR)
+
+| FR ID | PRD | 요구 설명 (shall) | 우선순위 | 구현 상태 (brownfield) | 비고 |
+|-------|-----|-------------------|----------|------------------------|------|
+| FR-1 | [source:prd#…] | … | Must | 미구현 | … |
+
+### Non-functional requirements (NFR)
+
+| NFR ID | PRD | 요구 | 목표치 | 검증 방법 |
+|--------|-----|------|--------|-----------|
+| NFR-1 | [source:prd#…] | … | … | … |
+
+### Constraints / assumptions / dependencies
+
+| 유형 | ID | 내용 | 영향 |
+|------|-----|------|------|
+| … | … | … | … |
+
+### Open / ambiguous (link to Ch.7)
+
+| ID | 유형 | 설명 | 처리 |
+|----|------|------|------|
+| OQ-1 | 모호 | … | Ch.7 |
+
+### RTM (draft)
+
+| PRD 앵커 | REQ ID | AC ID | Ch.5–6 hook | Test ID |
+|----------|--------|-------|-------------|---------|
+| [source:prd#…] | FR-1 | TBD | … | TBD |
+
+---
+
 ## Concepts (introduction order)
 
 1. …

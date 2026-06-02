@@ -136,7 +136,7 @@ Tell user:
 - Path to `tasks.md` and source TDD path
 - Must AC count vs Task count; CI-gated test count
 - Phase order summary (Foundation → AC phases)
-- Optional next steps (**only if user asks**): `executing-plans`, `writing-plans`, Paperclip issues
+- Optional next steps (**only if user asks**): `tasks-to-issues` (Issue Spec + tracker), `writing-plans`, `executing-plans`
 
 **STOP.** Do not implement or create PRs.
 
@@ -156,4 +156,5 @@ Tell user:
 
 - **prd-to-tdd** — upstream TDD + `validate-tdd.py`
 - **Serena** — verify `path` targets exist (brownfield) before marking paths in tasks
-- **executing-plans** / **writing-plans** — downstream (user-initiated only)
+- **tasks-to-issues** — Issue Spec + GitHub/Jira/Paperclip (user-initiated only)
+- **executing-plans** / **writing-plans** — downstream after Issue Spec + plan (user-initiated only)

@@ -53,6 +53,38 @@ v1 범위는 internal network에서 Bearer 인증 없이 호출 가능한 API로
 
 이 요구는 relational ACID 또는 동등한 트랜잭션 보장을 갖는 datastore 선택으로 이어진다.
 
+### 요구사항 분석
+
+PRD items CRUD를 FR/NFR/제약으로 정리한다. greenfield이므로 구현 상태 열은 두지 않으며, Ch.4 datastore 갈림의 근거가 된다.
+
+#### 기능 요구 (FR)
+
+| FR ID | PRD | 요구 설명 (shall) | 우선순위 | 비고 |
+|-------|-----|-------------------|----------|------|
+| FR-1 | [source:prd#items-crud] | items REST CRUD API를 제공해야 한다 | Must | Ch.6 API |
+| FR-2 | [source:prd#transaction] | cross-entity write는 단일 트랜잭션으로 커밋되어야 한다 | Must | Ch.4 datastore |
+
+#### 비기능 요구 (NFR)
+
+| NFR ID | PRD | 요구 | 목표치 | 검증 방법 (개략) |
+|--------|-----|------|--------|------------------|
+| NFR-1 | [source:prd#health] | Kubernetes liveness용 health endpoint | 200 OK | integration probe |
+
+#### 제약·가정·의존성
+
+| 유형 | ID | 내용 | 영향 |
+|------|-----|------|------|
+| 제약 | CON-1 | v1 public auth 없음, internal network only | 범위 |
+
+#### 추적성 매트릭스 (RTM)
+
+| PRD 앵커 | REQ ID | (예정) AC ID | 설계 반영 (Ch.5–6) | 테스트 |
+|----------|--------|--------------|-------------------|--------|
+| [source:prd#items-crud] | FR-1 | AC-1 | ApiServer REST routes | T-1 |
+| [source:prd#transaction] | FR-2 | AC-2 | ItemRepository transactional writes | T-2 |
+
+다음 장에서는 scaffold만 존재하는 시작점을 기술한다.
+
 ## 3. 시작점
 
 PRD가 요구하는 items CRUD와 트랜잭션 일관성을 구현할 도메인 코드는 아직 존재하지 않는다. 저장소에는 Node 20과 TypeScript 보일러플레이트만 있으며, `package.json`에 express 4.x와 typescript가 선언되어 있다. `src/` 디렉터리는 비어 있어 HTTP handler, repository, schema migration 코드가 모두 미구현 상태이다.

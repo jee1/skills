@@ -1,7 +1,7 @@
 # Design: `prd-to-tdd` Skill
 
 **Date:** 2026-05-25  
-**Status:** Approved — implemented at `~/.cursor/skills/prd-to-tdd/`  
+**Status:** Superseded in part — **source of truth:** `prd-to-tdd/SKILL.md` (7 chapters, Ch.2 `### 요구사항 분석`, strict + `--narrative` validation). This file retains historical context; do not use the 5-chapter outline below for new work.  
 **Scope:** Agent skill that ingests PRD (Markdown / Google Docs), analyzes codebase, and writes a forward-only Technical Design Document (TDD).
 
 ---

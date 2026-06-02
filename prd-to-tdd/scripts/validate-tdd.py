@@ -48,6 +48,19 @@ CHAPTER_HEADERS = {
     ],
 }
 
+CH2_REQ_SUBSECTION = re.compile(r"^###\s+요구사항\s+분석\s*$", re.M)
+CH2_FR_HEADING = re.compile(r"^####\s+기능\s+요구\s*\(FR\)\s*$", re.M)
+CH2_RTM_HEADING = re.compile(r"^####\s+추적성\s+매트릭스\s*\(RTM\)\s*$", re.M)
+FR_ID = re.compile(r"\bFR-\d+\b", re.I)
+REQ_ID = re.compile(r"\b(?:FR|NFR|CON|ASM|DEP|OQ)-\d+\b", re.I)
+OQ_ID = re.compile(r"\bOQ-\d+\b", re.I)
+MUST_PRIORITY = re.compile(r"\bMust\b", re.I)
+CH2_OQ_HEADING = re.compile(r"^####\s+모호[·•]충돌[·•]미결\s*$", re.M)
+RTM_AC_PLACEHOLDER = re.compile(r"\b(?:TBD|예정|미정)\b", re.I)
+MIN_FR_TABLE_ROWS = 2
+MIN_RTM_TABLE_ROWS = 2
+MIN_REQ_ANALYSIS_LEAD_CHARS = 80
+
 CH5_SUBSECTIONS = [
     r"###\s+아키텍처\s+개요",
     r"###\s+구성요소\s+및\s+책임",
@@ -720,6 +733,276 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
     return errors
 
 
+def _slice_h4_block(section: str, heading: re.Pattern[str]) -> str:
+    """Return text from #### heading through content before the next #### (or end)."""
+    m = heading.search(section)
+    if not m:
+        return ""
+    rest = section[m.end() :]
+    next_h4 = re.search(r"^####\s+", rest, re.M)
+    end = m.start() + len(m.group()) + (next_h4.start() if next_h4 else len(rest))
+    return section[m.start() : end]
+
+
+def _table_data_rows(section: str) -> int:
+    """Count markdown table body rows (exclude header and separator)."""
+    rows = 0
+    past_sep = False
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        if re.match(r"^\|[\s\-:|]+\|$", stripped):
+            past_sep = True
+            continue
+        if past_sep:
+            rows += 1
+    return rows
+
+
+def check_requirements_analysis(body: str, mode: str) -> list[ValidationError]:
+    """Ch.2 ### 요구사항 분석 — FR inventory + RTM before design chapters."""
+    errors: list[ValidationError] = []
+    ch2 = _chapter_slice(body, r"^##\s+2\.\s+", r"^##\s+3\.\s+")
+    if not ch2:
+        return errors
+
+    req_m = CH2_REQ_SUBSECTION.search(ch2)
+    if not req_m:
+        errors.append(
+            ValidationError(
+                0,
+                "ch2-req-analysis-missing",
+                "Ch.2 missing required ### 요구사항 분석",
+            )
+        )
+        return errors
+
+    req_sec = ch2[req_m.start() :]
+    lead = _lead_prose_lines(req_sec)
+    if len(lead.strip()) < MIN_REQ_ANALYSIS_LEAD_CHARS:
+        errors.append(
+            ValidationError(
+                req_m.start(),
+                "ch2-req-analysis-lead-thin",
+                f"### 요구사항 분석 needs ≥{MIN_REQ_ANALYSIS_LEAD_CHARS} chars lead prose before tables",
+            )
+        )
+
+    fr_m = CH2_FR_HEADING.search(req_sec)
+    if not fr_m:
+        errors.append(
+            ValidationError(
+                req_m.start(),
+                "ch2-fr-heading-missing",
+                "Ch.2 ### 요구사항 분석 missing #### 기능 요구 (FR)",
+            )
+        )
+    else:
+        fr_block = _slice_h4_block(req_sec, CH2_FR_HEADING)
+        fr_rows = _table_data_rows(fr_block)
+        fr_ids = len(set(FR_ID.findall(fr_block)))
+        if fr_rows < MIN_FR_TABLE_ROWS:
+            errors.append(
+                ValidationError(
+                    fr_m.start(),
+                    "ch2-fr-table-thin",
+                    f"#### 기능 요구 (FR) needs ≥{MIN_FR_TABLE_ROWS} data rows (found {fr_rows})",
+                )
+            )
+        if fr_ids < MIN_FR_TABLE_ROWS:
+            errors.append(
+                ValidationError(
+                    fr_m.start(),
+                    "ch2-fr-id-missing",
+                    f"FR table needs ≥{MIN_FR_TABLE_ROWS} FR-n IDs (found {fr_ids})",
+                )
+            )
+        if fr_block and not PRD_ANCHOR.search(fr_block):
+            errors.append(
+                ValidationError(
+                    fr_m.start(),
+                    "ch2-fr-prd-anchor-missing",
+                    "FR table needs at least one [source:prd#…] anchor",
+                )
+            )
+        if mode == "brownfield" and fr_block and "구현 상태" not in fr_block:
+            errors.append(
+                ValidationError(
+                    fr_m.start(),
+                    "ch2-fr-impl-status-missing",
+                    "Brownfield FR table needs 구현 상태 column",
+                )
+            )
+
+    rtm_m = CH2_RTM_HEADING.search(req_sec)
+    if not rtm_m:
+        errors.append(
+            ValidationError(
+                req_m.start(),
+                "ch2-rtm-heading-missing",
+                "Ch.2 ### 요구사항 분석 missing #### 추적성 매트릭스 (RTM)",
+            )
+        )
+    else:
+        rtm_block = _slice_h4_block(req_sec, CH2_RTM_HEADING)
+        rtm_rows = _table_data_rows(rtm_block)
+        if rtm_rows < MIN_RTM_TABLE_ROWS:
+            errors.append(
+                ValidationError(
+                    rtm_m.start(),
+                    "ch2-rtm-table-thin",
+                    f"#### 추적성 매트릭스 (RTM) needs ≥{MIN_RTM_TABLE_ROWS} data rows (found {rtm_rows})",
+                )
+            )
+        req_refs = len(set(REQ_ID.findall(rtm_block)))
+        if req_refs < MIN_RTM_TABLE_ROWS:
+            errors.append(
+                ValidationError(
+                    rtm_m.start(),
+                    "ch2-rtm-req-id-missing",
+                    f"RTM needs ≥{MIN_RTM_TABLE_ROWS} REQ IDs (FR/NFR/…, found {req_refs})",
+                )
+            )
+
+    return errors
+
+
+def _fr_must_ids(fr_block: str) -> set[str]:
+    """FR IDs from the FR table rows whose priority column contains Must."""
+    must: set[str] = set()
+    past_sep = False
+    for line in fr_block.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        if re.match(r"^\|[\s\-:|]+\|$", stripped):
+            past_sep = True
+            continue
+        if not past_sep:
+            continue
+        fr_m = FR_ID.search(stripped)
+        if fr_m and MUST_PRIORITY.search(stripped):
+            must.add(fr_m.group().upper())
+    return must
+
+
+def _rtm_fr_ac_map(rtm_block: str) -> dict[str, set[str]]:
+    """Map FR ID -> AC IDs referenced on the same RTM table row."""
+    mapping: dict[str, set[str]] = {}
+    past_sep = False
+    for line in rtm_block.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        if re.match(r"^\|[\s\-:|]+\|$", stripped):
+            past_sep = True
+            continue
+        if not past_sep:
+            continue
+        fr_m = FR_ID.search(stripped)
+        if not fr_m:
+            continue
+        fr_id = fr_m.group().upper()
+        ac_ids = {a.upper() for a in AC_ID.findall(stripped)}
+        mapping.setdefault(fr_id, set()).update(ac_ids)
+    return mapping
+
+
+def check_requirement_traceability(body: str, mode: str) -> list[ValidationError]:
+    """Must FR → RTM → Ch.6 AC; Ch.2 OQ-* → Ch.7 열린 질문."""
+    errors: list[ValidationError] = []
+    ch2 = _chapter_slice(body, r"^##\s+2\.\s+", r"^##\s+3\.\s+")
+    ch6 = _chapter_slice(body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
+    ch7 = _chapter_slice(body, r"^##\s+7\.\s+마무리", None)
+    if not ch2:
+        return errors
+
+    req_m = CH2_REQ_SUBSECTION.search(ch2)
+    if not req_m:
+        return errors
+
+    req_sec = ch2[req_m.start() :]
+    fr_m = CH2_FR_HEADING.search(req_sec)
+    rtm_m = CH2_RTM_HEADING.search(req_sec)
+    fr_block = _slice_h4_block(req_sec, CH2_FR_HEADING) if fr_m else ""
+    rtm_block = _slice_h4_block(req_sec, CH2_RTM_HEADING) if rtm_m else ""
+
+    must_frs = _fr_must_ids(fr_block)
+    if not must_frs:
+        return errors
+
+    rtm_map = _rtm_fr_ac_map(rtm_block)
+    rtm_frs = set(rtm_map.keys())
+
+    ac_line, ac_sec = _subsection_content(ch6, r"###\s+인수\s*조건") if ch6 else (0, "")
+    ac_ids = {a.upper() for a in AC_ID.findall(ac_sec)} if ac_sec else set()
+    ac_fr_mentions = {f.upper() for f in FR_ID.findall(ac_sec)} if ac_sec else set()
+
+    anchor_line = rtm_m.start() if rtm_m else (fr_m.start() if fr_m else req_m.start())
+    for fr_id in sorted(must_frs):
+        if fr_id not in rtm_frs:
+            errors.append(
+                ValidationError(
+                    anchor_line,
+                    "must-fr-rtm-missing",
+                    f"Must {fr_id} must appear in #### 추적성 매트릭스 (RTM) REQ ID column",
+                )
+            )
+            continue
+
+        ac_from_rtm = {a for a in rtm_map.get(fr_id, set()) if not RTM_AC_PLACEHOLDER.search(a)}
+        covered_by_rtm = bool(ac_from_rtm & ac_ids)
+        covered_by_mention = fr_id in ac_fr_mentions
+        if covered_by_rtm or covered_by_mention:
+            continue
+        if ac_from_rtm:
+            errors.append(
+                ValidationError(
+                    ac_line or anchor_line,
+                    "must-fr-ac-rtm-drift",
+                    f"Must {fr_id} RTM maps to {', '.join(sorted(ac_from_rtm))} "
+                    f"but those AC IDs are missing from Ch.6 ### 인수조건",
+                )
+            )
+        else:
+            errors.append(
+                ValidationError(
+                    ac_line or anchor_line,
+                    "must-fr-ac-missing",
+                    f"Must {fr_id} needs ≥1 AC-* in RTM (not TBD/예정) and referenced in Ch.6 ### 인수조건",
+                )
+            )
+
+    if CH2_OQ_HEADING.search(req_sec):
+        oq_block = _slice_h4_block(req_sec, CH2_OQ_HEADING)
+        oq_ids = {o.upper() for o in OQ_ID.findall(oq_block)}
+        if oq_ids:
+            if not ch7:
+                errors.append(
+                    ValidationError(0, "oq-ch7-missing", "Ch.2 defines OQ-* but Ch.7 is missing")
+                )
+            else:
+                oq_line, oq_sec = _subsection_content(ch7, r"###\s+열린\s+질문")
+                if not oq_sec:
+                    errors.append(
+                        ValidationError(0, "ch7-open-questions", "Ch.7 missing ### 열린 질문 for OQ-*")
+                    )
+                else:
+                    oq_upper = oq_sec.upper()
+                    for oq_id in sorted(oq_ids):
+                        if oq_id not in oq_upper:
+                            errors.append(
+                                ValidationError(
+                                    oq_line,
+                                    "oq-ch7-missing",
+                                    f"{oq_id} from Ch.2 #### 모호·충돌·미결 must appear in Ch.7 ### 열린 질문",
+                                )
+                            )
+
+    return errors
+
+
 def check_design_subsections(body: str) -> list[ValidationError]:
     errors: list[ValidationError] = []
     ch5 = _chapter_slice(body, r"^##\s+5\.\s+상위설계", r"^##\s+6\.\s+")
@@ -1232,6 +1515,8 @@ def validate(path: Path, *, strict: bool = True, narrative: bool = False, readab
     errors.extend(check_chapters(body, mode))
     errors.extend(check_forbidden_phrases(body))
     errors.extend(check_unescaped_tilde(body))
+    errors.extend(check_requirements_analysis(body, mode))
+    errors.extend(check_requirement_traceability(body, mode))
     errors.extend(check_design_subsections(body))
     errors.extend(check_ch4_ch6_sources(body))
     errors.extend(check_ch4_decision_cards(body, mode))

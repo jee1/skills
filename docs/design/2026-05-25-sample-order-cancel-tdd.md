@@ -26,8 +26,9 @@ review_rounds: 0
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | ## 1. 서문 opening + Goals → [§5](#5-상위설계) diagram | \~3분 |
-| Dev | [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) dev index + tables | \~5분 |
+| PM | ## 1. 서문 opening + Goals → [요구사항 분석](#요구사항-분석) → [§5](#5-상위설계) diagram | \~3분 |
+| Dev | [요구사항 분석](#요구사항-분석) → [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) dev index + tables | \~5분 |
+| QA | [요구사항 분석](#요구사항-분석) RTM → [§6](#6-상세설계) [인수조건](#인수조건) → [테스트](#테스트) | \~3분 |
 | 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | \~3분 |
 
 ## 1. 서문
@@ -52,6 +53,48 @@ B2C 웹 쇼핑몰 고객은 결제 완료 전·후 특정 조건에서 주문을
 고객 지원팀은 취소 API 응답만으로 주문·환불·재고 상태를 설명할 수 있어야 한다. 동일 Idempotency-Key로 재시도해도 중복 환불이 발생하지 않아야 한다. PRD cancel-flow는 paid 취소 시 환불 후 재고 복구 순서를 명시한다.
 
 이러한 요구는 OrderService와 PaymentGateway, InventoryService 간 orchestration을 필요로 한다.
+
+### 요구사항 분석
+
+PRD cancel-flow를 설계·검증 가능한 REQ-ID 목록으로 정리한다. 아래 FR은 Ch.6 인수조건의 상위 요구이며, RTM은 FR→AC→테스트 추적의 초안이다. 다음 장에서는 각 FR의 **구현 상태**를 코드 기준으로 대조한다.
+
+#### 기능 요구 (FR)
+
+| FR ID | PRD | 요구 설명 (shall) | 우선순위 | 구현 상태 | 비고 |
+|-------|-----|-------------------|----------|-----------|------|
+| FR-1 | [source:prd#cancel-flow] | pending·paid 주문은 고객이 취소 API로 취소할 수 있어야 한다 | Must | 부분 | endpoint 존재 |
+| FR-2 | [source:prd#cancel-flow] | paid 취소 시 결제 금액 전액 환불이 선행되어야 한다 | Must | 미구현 | Ch.4 갭 |
+| FR-3 | [source:prd#cancel-flow] | 취소 시 line item 기준 재고가 복구되어야 한다 | Must | 미구현 | release 미호출 |
+| FR-4 | [source:prd#idempotency] | 동일 Idempotency-Key 재시도 시 중복 환불이 발생하지 않아야 한다 | Must | 부분 | header 미전달 |
+
+#### 비기능 요구 (NFR)
+
+| NFR ID | PRD | 요구 | 목표치 | 검증 방법 (개략) |
+|--------|-----|------|--------|------------------|
+| NFR-1 | [source:prd#auth] | 취소 API는 JWT Bearer 인증을 요구한다 | 모든 요청 | integration 401 시나리오 |
+
+#### 제약·가정·의존성
+
+| 유형 | ID | 내용 | 영향 |
+|------|-----|------|------|
+| 제약 | CON-1 | B2C 웹 주문 API만, B2B·bulk cancel 제외 | 범위 |
+| 가정 | ASM-1 | paid 주문 row에 payment_intent_id 저장됨 | Stripe refund |
+| 의존성 | DEP-1 | InventoryService 내부 release API | 재고 복구 |
+
+#### 모호·충돌·미결
+
+| ID | 유형 | 설명 | 처리 |
+|----|------|------|------|
+| OQ-1 | 모호 | partial refund 정책 미정 | Non-Goal; Ch.7 |
+
+#### 추적성 매트릭스 (RTM)
+
+| PRD 앵커 | REQ ID | (예정) AC ID | 설계 반영 (Ch.5–6) | 테스트 |
+|----------|--------|--------------|-------------------|--------|
+| [source:prd#cancel-flow] | FR-1 | AC-4 | POST cancel pending/paid, status=cancelled | T-4 |
+| [source:prd#cancel-flow] | FR-2 | AC-1 | PaymentGateway.refund paid 분기 | T-1 |
+| [source:prd#cancel-flow] | FR-3 | AC-2 | InventoryService.release | T-2 |
+| [source:prd#idempotency] | FR-4 | AC-3 | Idempotency-Key 전파·중복 방지 | T-3 |
 
 ## 3. 현재 시스템
 
@@ -199,10 +242,11 @@ PG timeout 시 retry queue에 refund job을 적재한다 [ref:A-8].
 
 ### 인수조건
 
-인수조건(AC)은 구현 완료 여부를 객관적으로 판단하는 기준이다. paid 취소·Idempotency·PG timeout 세 축은 PRD cancel-flow와 직접 연결되며, 각 AC는 Ch.6 테스트 또는 명시된 manual QA로 증명한다 [ref:A-5].
+인수조건(AC)은 구현 완료 여부를 객관적으로 판단하는 기준이다. FR-1 baseline cancel·paid 환불·Idempotency·PG timeout 네 축은 PRD cancel-flow와 직접 연결되며, 각 AC는 Ch.6 테스트 또는 명시된 manual QA로 증명한다 [ref:A-5].
 
 | AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
 |-------|-----|----------|----------|-----------|
+| AC-4 | [source:prd#cancel-flow] | Given pending 또는 paid 주문 When POST /orders/{id}/cancel Then HTTP 200, status=cancelled (pending는 refund 없음) | Must | Test T-4 passes |
 | AC-1 | [source:prd#cancel-flow] | Given paid 주문 When cancel 호출 Then Stripe refund 후 재고 release, status=cancelled | Must | Test T-1 passes |
 | AC-2 | [source:prd#cancel-flow] | Given 동일 Idempotency-Key When cancel 재시도 Then 동일 200 body, 중복 refund 없음 | Must | Test T-2 passes |
 | AC-3 | [source:prd#cancel-flow] | Given PG timeout When cancel Then 502 PAYMENT_TIMEOUT, 주문 status 변경 없음 | Should | Test T-3 passes (manual staging) |
@@ -213,6 +257,7 @@ Brownfield 기준 integration test는 `tests/integration/`에서 Stripe mock과 
 
 | Test ID | AC ID | Layer | 시나리오 | Fixture / Mock | CI gate |
 |---------|-------|-------|----------|----------------|---------|
+| T-4 | AC-4 | integration | pending cancel → 200, no refund call | orders seed pending | yes |
 | T-1 | AC-1 | integration | paid cancel → refund + inventory | stripe mock, orders seed | yes |
 | T-2 | AC-2 | integration | same Idempotency-Key twice | redis idempotency store | yes |
 | T-3 | AC-3 | integration | PaymentGateway timeout | stripe timeout stub | no |
@@ -232,7 +277,7 @@ Staging 1주 검증 후 production. Feature flag `cancel_refund_enabled`.
 
 ### 열린 질문
 
-- partial refund 정책은 PRD에 미정의이다.
+- **OQ-1:** partial refund 정책은 PRD에 미정의이다. Non-Goal로 두었으나 CS 정책 확정 시 Ch.4·Ch.6 갱신 필요.
 
 ## 부록 A. 출처·코드 위치
 

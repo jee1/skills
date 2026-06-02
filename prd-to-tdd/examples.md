@@ -2,21 +2,18 @@
 
 ## Brownfield — Good (forward-only)
 
+Ch.3–4 use lead prose and decision cards — not `요약:` / `> **사실:**` (forbidden in Ch.5–6; avoid in Ch.3–4 per current narrative-rules). Full Ch.2 FR/RTM pattern: see **Ch.2 — 요구사항 분석 (Good)** below.
+
 ```markdown
 ## 3. 현재 시스템
 
-요약: 주문 취소는 API 한 endpoint에서 상태만 바꾸며, 환불은 호출하지 않는다.
+B2C 주문 API는 `POST /orders/{id}/cancel` 한 endpoint에서 status만 `cancelled`로 바꾼다. PaymentGateway 호출은 없다.
 
-`POST /orders/{id}/cancel` 핸들러는 `OrderService.cancel`을 호출한다.
-
-> **사실:** 취소 시 status만 `cancelled`로 변경한다.
-> **근거:** [source:prd#cancel-flow] + `src/orders/cancel_handler.ts:8-22`
+`CancelHandler`는 JWT 검증 후 `OrderService.cancel`에 위임한다. paid 주문 row에 `payment_intent_id`는 있으나 환불 API는 연결되지 않았다 [ref:A-2].
 
 ## 4. 갭과 설계 전환
 
-요약: PRD는 환불 연동을 요구하지만, 코드에는 결제 모듈 호출이 없다.
-
-PRD는 취소 시 자동 환불을 요구한다. 코드는 status 변경만 수행하므로 환불 연동은 미구현이다.
+PRD cancel-flow는 paid 취소 시 자동 환불을 요구한다. 코드는 status 변경만 하므로 환불 연동은 **미구현** 갭이다.
 
 ### 환불 연동
 
@@ -28,12 +25,59 @@ PRD는 취소 시 자동 환불을 요구한다. 코드는 status 변경만 수�
 | 상태 | 확정 |
 | 코드 | `src/orders/cancel_handler.ts:18` — 현재 status 변경만 |
 
-**근거 설명:** Stripe Refunds API는 payment_intent 기준 환불을 지원하며, paid 주문 row에 payment_intent_id가 이미 저장되어 있다. status-only cancel은 PRD §cancel-flow의 “paid 시 자동 환불” 요구를 만족하지 못한다.
+**근거 설명:** Stripe Refunds API는 payment_intent 기준 환불을 지원하며, paid 주문 row에 payment_intent_id가 이미 저장되어 있다. status-only cancel은 PRD cancel-flow의 paid 시 자동 환불 요구를 만족하지 못한다.
 
 **참고:** [Stripe Refunds API](https://stripe.com/docs/api/refunds) — payment_intent 기준 환불 생성
 ```
 
-**Why good:** Ch.3 establishes code reality; Ch.4 first mentions PRD gap; no "as above".
+**Why good:** Ch.3 establishes code reality; Ch.4 labels PRD gap; decision card with official URL; no "as above".
+
+---
+
+## Ch.2 — 요구사항 분석 (Good)
+
+```markdown
+## 2. 배경과 문제
+
+… (≥8 sentences, 2–4 paragraphs: problem, scope, stakeholders) …
+
+### 요구사항 분석
+
+PRD cancel-flow를 FR 목록과 RTM으로 정제한다. Must FR은 Ch.6 인수조건으로 내려가며, 다음 장에서 코드 대조한다.
+
+#### 기능 요구 (FR)
+
+| FR ID | PRD | 요구 설명 (shall) | 우선순위 | 구현 상태 | 비고 |
+|-------|-----|-------------------|----------|-----------|------|
+| FR-1 | [source:prd#cancel-flow] | paid 취소 시 전액 환불 선행 | Must | 미구현 | Ch.4 |
+
+#### 추적성 매트릭스 (RTM)
+
+| PRD 앵커 | REQ ID | (예정) AC ID | 설계 반영 (Ch.5–6) | 테스트 |
+|----------|--------|--------------|-------------------|--------|
+| [source:prd#cancel-flow] | FR-1 | AC-1 | PaymentGateway.refund | T-1 |
+
+## 3. 현재 시스템
+```
+
+**Why good:** REQ IDs exist before Ch.4; RTM links PRD → FR → future AC; bridge into Ch.3 without "앞서".
+
+---
+
+## Ch.2 — 요구사항 분석 (Bad)
+
+```markdown
+## 2. 배경과 문제
+
+PRD 요구는 위와 같다.
+
+### 요구사항 분석
+
+- 환불 필요
+- 재고 복구 필요
+```
+
+**Violations:** bullet list instead of FR/RTM tables; no `FR-n` IDs; no `[source:prd#…]`; no bridge sentence to Ch.3.
 
 ---
 

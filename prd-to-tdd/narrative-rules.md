@@ -9,8 +9,8 @@ Detail rules for Ch.5–6: [design-sections.md](design-sections.md).
 | Chapter | Role | Narrative job |
 |---------|------|---------------|
 | 1. 서문 | 起 | Opening paragraph + scope; why this document exists |
-| 2. 배경과 문제 | 起→承 | Problem and scope in connected prose |
-| 3. 현재 시스템 / 시작점 | 承 | What exists today (code or scaffold) |
+| 2. 배경과 문제 | 起→承 | Problem and scope in connected prose; then `### 요구사항 분석` (FR/NFR/RTM) |
+| 3. 현재 시스템 / 시작점 | 承 | What exists today (code or scaffold); contrasts FR **구현 상태** |
 | 4. 갭과 설계 전환 / 설계 결정 | 转 | Gap → why change; Tier-1 decisions |
 | 5. 상위설계 | 结 (macro) | Target architecture as a consequence of Ch.4 |
 | 6. 상세설계 | 结 (micro) | Spec tables, **acceptance criteria**, **tests** grounded in Ch.5 names |
@@ -23,7 +23,7 @@ Answer each dimension **inside normal sentences**. Never prefix lines with `Who:
 | Chapter | Must answer (in prose) |
 |---------|------------------------|
 | 1 | Who reads this, why now, PRD source |
-| 2 | What problem, where (scope/boundary) |
+| 2 | What problem, where (scope/boundary); structured REQ IDs before design |
 | 3 | What exists, how it works today |
 | 4 | What changes, why, how (direction) |
 | 5 | What the target system does, how at high level |
@@ -114,7 +114,8 @@ Ch.5–6 follow **one** narrative path (권장 or 확정). Component **names** f
 
 - [ ] Concept introduction order (outline rows)
 - [ ] Ch.5 ≥2 component names; Ch.6 APIs/entities/flows/AC/tests mapped
-- [ ] Bridge plan: last line of Ch.2→3, 3→4, 4→5 sketched
+- [ ] Requirements inventory complete (FR + RTM) before Ch.4
+- [ ] Bridge plan: last line of Ch.2 (after ### 요구사항 분석)→3, 3→4, 4→5 sketched
 - [ ] Tier-1 in Ch.4; user confirm for `needs-user-confirm`
 - [ ] No chapter depends on a later chapter
 
