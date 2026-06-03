@@ -11,6 +11,8 @@ description: >-
 
 Produces **Technical Design Document** only. No implementation plans, tasks, or code changes. No auto handoff to `writing-plans` or SDD.
 
+**Recommended upstream:** Run **`prd-review`** on the PRD first. If `readiness: blocked`, stop unless the user explicitly accepts risk. If `readiness: ready` or `needs-clarification`, use `docs/reviews/*-prd-review.md` FR/OQ pre-inventory to seed Phase 1 classification.
+
 ## References (read when needed)
 
 | File | When |
@@ -275,6 +277,7 @@ Ch.5–6 subsection requirements: [design-sections.md](design-sections.md).
 
 ## Integration
 
+- **prd-review** (recommended upstream) — PRD ambiguity/contradiction gate before this skill
 - **gws-shared** + **gws-docs** — Google Docs PRD
 - **Serena** — code exploration before full file reads
 - **Task tool** — subagent reviewers (Phase 6)

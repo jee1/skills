@@ -6,6 +6,7 @@ Cursor Agent Skills maintained in this repository.
 
 | Skill | Description |
 |-------|-------------|
+| [prd-review](prd-review/) | PRD ambiguity/contradiction audit + TDD-readiness gate; optional [dual-brain](https://github.com/sleeplesshan/dual-brain) Right→Left — run before `prd-to-tdd` |
 | [prd-to-tdd](prd-to-tdd/) | PRD + codebase → TDD (7 chapters); optional [dual-brain](https://github.com/sleeplesshan/dual-brain) compact review — falls back to 3 reviewers if not installed |
 | [tdd-to-tasks](tdd-to-tasks/) | Validated TDD → implementation tasks (RTM, AC/Test traceability) |
 | [tasks-to-issues](tasks-to-issues/) | Issue Spec per AC → validate → GitHub/Jira/Paperclip registration |
@@ -39,6 +40,7 @@ ls -la ~/.cursor/skills/prd-to-tdd/SKILL.md
 ```text
 skills/
 ├── README.md
+├── prd-review/           # PRD quality gate before TDD (SKILL.md + references + scripts)
 ├── prd-to-tdd/           # Skill package (SKILL.md + references + scripts)
 ├── tdd-to-tasks/         # TDD → tasks skill + validate-tasks.py
 ├── tasks-to-issues/      # Issue Spec + validate-issue-spec.py + generate-issue-specs.py
@@ -56,6 +58,7 @@ skills/
 3. Validate script (example):
 
    ```bash
+   python prd-review/scripts/validate-prd-review.py docs/reviews/YYYY-MM-DD-<feature>-prd-review.md
    python prd-to-tdd/scripts/validate-tdd.py docs/design/2026-05-25-sample-order-cancel-tdd.md
    python prd-to-tdd/scripts/validate-tdd.py docs/design/2026-05-25-sample-order-cancel-tdd.md --narrative
    # strict (default): Ch.5–6 depth + Must FR→RTM→AC + OQ→Ch.7; --lenient skips depth/front-matter extras
