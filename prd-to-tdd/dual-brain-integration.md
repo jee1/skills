@@ -1,104 +1,179 @@
-# Dual-Brain Integration (optional)
+# Dual-Brain Integration
 
-`prd-to-tdd` works **without** the `dual-brain` skill. This file defines an **optional** path when `dual-brain` is installed and the orchestrator chooses to use it.
+When **`dual-brain/SKILL.md` exists** on disk, `prd-to-tdd` uses the **Enhanced path** by default for deeper PRD↔code analysis and richer Design Doc drafting. When the skill is missing, use the **Standard path** (orchestrator-only Phase 3b + three parallel reviewers in Phase 6).
 
-**Source of truth for dual-brain protocol:** `~/.cursor/skills/dual-brain/SKILL.md` (also `~/.codex/skills/dual-brain/`, `~/.agents/skills/dual-brain/`).
+**Protocol source:** `~/.cursor/skills/dual-brain/SKILL.md` (also `~/.codex/skills/`, `~/.agents/skills/`, `~/.claude/skills/`).
+
+**Project memory:** `<target-repo>/.dual-brain/MEMORY.md` — load during every dual-brain step (Step 0A in dual-brain SKILL). Memory is advisory; **code and PRD beat stale memory**.
 
 ---
 
-## Availability check (orchestrator, before Phase 3b or 6)
+## Path selection (orchestrator, start of run)
 
 Probe in order; **first existing path wins**:
 
 1. `~/.cursor/skills/dual-brain/SKILL.md`
 2. `~/.codex/skills/dual-brain/SKILL.md`
 3. `~/.agents/skills/dual-brain/SKILL.md`
+4. `~/.claude/skills/dual-brain/SKILL.md`
 
-| Result | Action |
-|--------|--------|
-| **Found** | May use dual-brain paths below if user asked for dual-brain **or** Tier-1 forks are high-impact |
-| **Not found** | Use **default** Phase 3b (orchestrator asks user) and Phase 6 (**3 parallel subagents**). Do not simulate dual-brain personas. Tell user once: `dual-brain` not installed — using standard reviewers. |
+| Result | Path | Phase 6 |
+|--------|------|---------|
+| **Found** | **Enhanced** (default) | Mode B — left-brain-verification (+ narrative if doubt) |
+| **Not found** | **Standard** | Mode A — three parallel reviewers |
 
-Optional project memory: `<target-project>/.dual-brain/MEMORY.md` — load per dual-brain SKILL during Right/Left steps only.
+Tell the user once at Phase 7 which path ran. User may say `standard reviewers` or `no dual-brain` to force Standard path even when installed.
 
----
-
-## When to use dual-brain path
-
-| Signal | Suggestion |
-|--------|------------|
-| User says `dual brain`, `dual-brain`, `left brain right brain` | **Use** dual-brain path |
-| Phase 3 outline has ≥1 `needs-user-confirm` Tier-1 fork | **Phase 3b:** Right Brain grill before user message |
-| Brownfield + many PRD↔code gaps | **Phase 6:** Left Brain verification |
-| Simple greenfield, script already passed narrative | **Skip** narrative-reviewer; Left Brain only |
-| `dual-brain` skill not on disk | **Never** use this file's spawn pattern — default only |
+| User signal | Path |
+|-------------|------|
+| `dual brain`, `dual-brain`, `left brain right brain` | Enhanced (explicit) |
+| `standard reviewers`, `no dual-brain` | Standard |
+| (default when skill on disk) | **Enhanced** |
 
 ---
 
-## Phase 3b — Right Brain (optional, sequential)
+## Enhanced path — phase map
 
-**Only if** dual-brain skill exists **and** outline has `needs-user-confirm` items.
+```text
+Phase 1 PRD ingest
+Phase 2 Code analysis + mode
+Phase 2b Dual-brain analysis (Right → Left)     ← NEW
+Phase 3 Outline (uses 2b notes)
+Phase 3b Right Brain grill (Tier-1 + scope)   ← expanded
+Phase 3b′ User confirm (needs-user-confirm only)
+Phase 3c Left Brain design blueprint          ← NEW
+Phase 4 Draft Ch.1–8 (uses 3c blueprint)
+Phase 5 validate-tdd.py (+ --narrative)
+Phase 6 Mode B review
+Phase 7 Save & report
+```
 
-1. Read `dual-brain/SKILL.md` § Step 0A–0B (memory intake + task definition).
-2. Spawn **one** Task `generalPurpose`, `readonly: true` with Right Brain persona from dual-brain SKILL + outline + PRD summary + `.dual-brain/MEMORY.md` if present.
-3. Use Right Brain output to structure the **user confirmation message** (alternatives, 권장, blind spots).
-4. **Do not** draft Ch.6 Alternatives decision cards for those topics until user answers.
-
-If dual-brain missing: follow [SKILL.md](SKILL.md) Phase 3b (orchestrator-only) — unchanged.
+Standard path skips **2b**, **3c**, uses orchestrator-only **3b′**, and **Phase 6 Mode A**.
 
 ---
 
-## Phase 6 — Two modes
+## Phase 2b — Dual-brain analysis (Enhanced only)
 
-### Mode A — Default (always valid)
+**Goal:** Deepen PRD understanding and code grounding **before** the outline. Output is **internal notes** (not pasted into the TDD verbatim).
 
-Spawn **three** Task agents **in parallel** — see [subagent-prompts.md](subagent-prompts.md) §1–3.
+1. **Memory intake** — dual-brain SKILL § Step 0A on `<target-repo>/.dual-brain/MEMORY.md`.
+2. **Task context** — Step 0B: feature slug, PRD summary, mode (brownfield/greenfield), repo scope.
+3. **Right Brain** — Task `generalPurpose`, `readonly: true`, prompt [subagent-prompts.md](subagent-prompts.md) §6.
+   - Deliverables: grilling questions, lexicon, macro-context, PRD blind spots, memory suspicions, creative structure hints.
+4. **Left Brain** — Task sequential after Right Brain, prompt §7.
+   - Deliverables: verified gaps (path:line), PRD↔code conflicts (code wins), mode check, component/API candidates, risk list.
+5. **Orchestrator synthesis** — One-page **Analysis Brief** used in Phase 3–4:
+   - Confirmed facts vs assumptions
+   - Gap list (brownfield) / decision list (greenfield)
+   - Recommended Ch.6 Tier-1 topics + tags
+   - Lexicon table (ambiguous PRD terms → definition)
+   - Open questions for Ch.8
 
-Use when: dual-brain not installed, user did not request dual-brain, or Left Brain path already ran and found nothing extra.
+Do **not** skip Phase 2 Serena/code scan; 2b **interprets** Phase 2 evidence.
 
-### Mode B — Compact (dual-brain installed)
+---
+
+## Phase 3b — Right Brain grill (Enhanced)
+
+**When Enhanced:** run **always** after outline draft (even if no `needs-user-confirm`).
+
+| Outline signal | Right Brain focus |
+|----------------|-------------------|
+| `needs-user-confirm` | Alternatives, blind spots, user message draft |
+| `multi-recommend` | Challenge 권장 vs rejected; missing PRD constraints |
+| `single` only | Still grill scope, NFR, testability, Ch.3 FR completeness |
+| Brownfield + gaps | Challenge “미구현” labels and hidden dependencies |
+| Greenfield | Challenge stack assumptions and fictional scope creep |
+
+1. Memory intake (Hot/Warm only if relevant).
+2. Spawn Right Brain — [subagent-prompts.md](subagent-prompts.md) §8 + outline + Analysis Brief + PRD excerpt.
+3. Use output to:
+   - Refine outline rows (FR, RTM, Ch.5–7 mapping)
+   - Structure **user confirmation** when `needs-user-confirm` exists
+   - Add OQ-* rows for unresolved grills → Ch.8 later
+
+**Do not** write Ch.6 `### Decision Summary` cards for `needs-user-confirm` topics until the user picks.
+
+**Standard path:** orchestrator-only Phase 3b per [SKILL.md](SKILL.md) — no Right Brain spawn.
+
+---
+
+## Phase 3c — Left Brain design blueprint (Enhanced only)
+
+**Goal:** Verified skeleton for **Ch.5 → Ch.6 → Ch.7** before prose drafting.
+
+1. Inputs: Analysis Brief, refined outline, Right Brain grill output, PRD, repo (Serena paths).
+2. Spawn Left Brain — [subagent-prompts.md](subagent-prompts.md) §9.
+3. **Blueprint** sections (orchestrator keeps as Phase 4 scratchpad):
+   - Ch.5: gap narrative bullets, transition mermaid labels, component list, data-flow steps (≥5)
+   - Ch.6: Decision Summary table draft + Tier-1 card fields (no final prose yet if user confirm pending)
+   - Ch.7: API table skeleton, entity fields, error branches (≥2), AC IDs + conditions, test matrix
+4. Resolve Left Brain vs Right Brain conflicts once (dual-brain SKILL § Step 3); code/PRD win over memory.
+
+Phase 4 must **follow** the blueprint; deviations need a note in Ch.8 Open Questions.
+
+---
+
+## Phase 4 — Drafting with dual-brain (Enhanced)
+
+Orchestrator writes the TDD (not delegated wholesale). Use:
+
+| Source | Use in draft |
+|--------|----------------|
+| Analysis Brief | Ch.2–4 tone, gap honesty, lexicon |
+| Outline + blueprint | Ch.5–7 structure |
+| Right Brain grill | Ch.8 OQ, Non-Goals, Risks |
+| Left Brain verification | `path:line`, Tier-1 **참고:** URLs, AC wording |
+
+**Order unchanged:** Ch.1→4, then Ch.5→6→7, Ch.8, appendices.
+
+After draft, optional **light Left Brain pass** (orchestrator self-check against §9 checklist) before Phase 5 — no extra spawn unless Major issues found in self-read.
+
+---
+
+## Phase 6 — Review modes
+
+### Mode A — Standard
+
+Three parallel tasks — [subagent-prompts.md](subagent-prompts.md) §1–3.
+
+### Mode B — Enhanced (default when dual-brain installed)
 
 After `validate-tdd.py` strict + `--narrative` exit `0`:
 
-| Step | Agent | Replaces | Skip when |
-|------|-------|----------|-----------|
-| 1 | **left-brain-verification-reviewer** | citation-reviewer + code-grounding-reviewer | never on this path |
-| 2 | **narrative-reviewer** | — | `--narrative` passed **and** no semantic doubt |
+| Step | Agent | Prompt |
+|------|-------|--------|
+| 1 | left-brain-verification-reviewer | §4 (sequential) |
+| 2 | narrative-reviewer | §1 only if semantic doubt |
 
-- Step 1: **sequential** Task (read repo + PRD + TDD).
-- Step 2: optional parallel only if narrative pass needed.
+Map prose to `severity | chapter:line | issue | fix`. **Critical** → edit → Phase 5 → Phase 6 (max 2 rounds).
 
-Prompt: [subagent-prompts.md](subagent-prompts.md) §4–5.
-
-**Output contract (both modes):** merge only lines matching:
-
-```text
-severity | chapter:line | issue | fix
-```
-
-Map dual-brain prose to this format before merge. **Critical** → edit → Phase 5 → Phase 6 again (max 2 rounds).
+Phase 7 report: `validation: script + dual-brain enhanced (2b/3b/3c + left-brain [+ narrative])`.
 
 ---
 
-## Script vs reviewers (compact path)
+## Script vs dual-brain
 
-| Concern | Phase 5 script | Phase 6 compact |
-|---------|----------------|-----------------|
-| Headers, depth, FR→RTM→AC, OQ→Ch.8 | strict | — (trust script) |
-| `요약:`, tilde, mermaid placement | strict + `--narrative` | narrative-reviewer only if doubtful |
-| Tier-1 URL, PRD anchor match | partial | left-brain-verification |
-| path:line, fiction, code-first | — | left-brain-verification |
-| Story flow / weak bridges | `--narrative` partial | narrative-reviewer if spawned |
+| Concern | Phase 5 script | Phase 2b/3c/6 |
+|---------|----------------|---------------|
+| H2 order, FR/RTM, depth gates | strict | blueprint pre-check |
+| Narrative bridges, mermaid | `--narrative` | Right Brain grill + narrative-reviewer |
+| path:line, fiction, code-first | partial | Left Brain 2b + 6 |
+| Tier-1 URL, PRD anchors | partial | Left Brain 3c + 6 |
+| Story / 기승전결 | `--narrative` | narrative-reviewer if doubt |
 
 ---
 
-## Phase 7 — Report path used
+## Memory auto-save (Enhanced)
 
-Tell user which validation path ran:
+After Phase 7 (or when durable project facts emerged), orchestrator may update `<target-repo>/.dual-brain/MEMORY.md` per dual-brain SKILL § Step 4A:
 
-- `validation: script + 3 reviewers (default)`
-- `validation: script + dual-brain compact (left-brain [+ narrative])`
-- `dual-brain: not installed — default reviewers`
+- Architecture decisions from Ch.6 (confirmed only)
+- Rejected alternatives
+- Feature vocabulary from lexicon
+- Do **not** store PRD secrets or credentials
+
+Ask the user what to remove or adjust after saving.
 
 ---
 
@@ -109,7 +184,7 @@ git clone https://github.com/sleeplesshan/dual-brain.git ~/.cursor/skills/dual-b
 # or: ln -sfn /path/to/dual-brain ~/.cursor/skills/dual-brain
 ```
 
-Not required for `prd-to-tdd` symlink:
+`prd-to-tdd` symlink (unchanged):
 
 ```bash
 ln -sfn "$(pwd)/prd-to-tdd" ~/.cursor/skills/prd-to-tdd

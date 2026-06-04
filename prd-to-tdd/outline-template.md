@@ -2,6 +2,8 @@
 
 Complete **before Phase 4**. Minimum row counts are strict-profile gates.
 
+**Enhanced path:** incorporate **Analysis Brief** (Phase 2b) and **Right Brain grill** (Phase 3b) into rows below before Phase 3c blueprint.
+
 **Write order in Phase 4:** Ch.5 (Proposed) → Ch.6 (Alternatives) → Ch.7 (Detailed).
 
 ## Minimum row counts
@@ -33,7 +35,7 @@ Complete **before Phase 4**. Minimum row counts are strict-profile gates.
 
 ### RTM (draft)
 
-| PRD anchor | REQ ID | AC ID | Ch.6–7 hook | Test ID |
+| PRD anchor | REQ ID | AC ID | Ch.5–7 hook | Test ID |
 |------------|--------|-------|-------------|---------|
 
 ---
