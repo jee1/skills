@@ -42,7 +42,7 @@ Optional project memory: `<target-project>/.dual-brain/MEMORY.md` — load per d
 1. Read `dual-brain/SKILL.md` § Step 0A–0B (memory intake + task definition).
 2. Spawn **one** Task `generalPurpose`, `readonly: true` with Right Brain persona from dual-brain SKILL + outline + PRD summary + `.dual-brain/MEMORY.md` if present.
 3. Use Right Brain output to structure the **user confirmation message** (alternatives, 권장, blind spots).
-4. **Do not** draft Ch.4 decision cards for those topics until user answers.
+4. **Do not** draft Ch.6 Alternatives decision cards for those topics until user answers.
 
 If dual-brain missing: follow [SKILL.md](SKILL.md) Phase 3b (orchestrator-only) — unchanged.
 
@@ -84,7 +84,7 @@ Map dual-brain prose to this format before merge. **Critical** → edit → Phas
 
 | Concern | Phase 5 script | Phase 6 compact |
 |---------|----------------|-----------------|
-| Headers, depth, FR→RTM→AC, OQ→Ch.7 | strict | — (trust script) |
+| Headers, depth, FR→RTM→AC, OQ→Ch.8 | strict | — (trust script) |
 | `요약:`, tilde, mermaid placement | strict + `--narrative` | narrative-reviewer only if doubtful |
 | Tier-1 URL, PRD anchor match | partial | left-brain-verification |
 | path:line, fiction, code-first | — | left-brain-verification |

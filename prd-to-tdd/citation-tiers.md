@@ -1,14 +1,14 @@
 # Citation Tiers
 
-Every technical claim in **Chapters 2–6** must be traceable. Tier depends on claim type. Tier-1 uses Ch.4 **decision cards** (see below); Tier-2 uses `[ref:A-n]` inline with a row in **Appendix A** (see readability profile in [design-sections.md](design-sections.md)).
+Every technical claim in **Chapters 2–8** must be traceable. Tier depends on claim type. Tier-1 uses Ch.6 **Alternatives** decision cards (see below); Tier-2 uses `[ref:A-n]` inline with a row in **Appendix A** (see [design-sections.md](design-sections.md)).
 
-**Chapter roles:** Ch.4 = decisions; Ch.5 = high-level To-Be; Ch.6 = interfaces/schemas/flows. See [design-sections.md](design-sections.md).
+**Chapter roles (Google Design Doc):** Ch.5 = Proposed / HLD; Ch.6 = Tier-1 alternatives & decisions; Ch.7 = Detailed (APIs, AC, tests). See [design-sections.md](design-sections.md).
 
 ## Tier-1 — Core Design Decisions
 
 **When required:** architecture choice, security model, datastore, auth strategy, protocol, breaking change, major library adoption.
 
-Use **one of two card shapes** per topic (see [narrative-rules.md](narrative-rules.md) decision tree). Each Tier-1 topic is a `### {주제}` subsection **after** `### 결정 요약`.
+Use **one of two card shapes** per topic (see [narrative-rules.md](narrative-rules.md) decision tree). Each Tier-1 topic is a `### {주제}` subsection in **Ch.6** **after** `### Decision Summary` (or `### 결정 요약`).
 
 **Do not** stack bare blockquote lines (`> **결정:**` …) as the primary layout — readers cannot scan them. Blockquotes are **legacy** only; new TDDs use decision cards.
 
@@ -144,11 +144,12 @@ The **근거 한줄** column mirrors the first sentence of `**근거 설명:**` 
 
 | Chapter | Format |
 |---------|--------|
-| Ch.2–3 | `[ref:A-n]` inline; row in Appendix A |
-| Ch.4 | Tier-1 decision cards only (not Tier-2 **사실:**) |
-| Ch.5–6 | `[ref:A-n]` inline; **no** `> **사실:**` blockquotes |
+| Ch.2–4 | `[ref:A-n]` inline; row in Appendix A |
+| Ch.5 Proposed | `[ref:A-n]` for facts; **no** Tier-1 decision cards |
+| Ch.6 Alternatives | Tier-1 decision cards only (not Tier-2 **사실:**) |
+| Ch.7 Detailed | `[ref:A-n]` inline; **no** `> **사실:**` blockquotes |
 | Appendix A | Canonical table (ID, 주장, PRD, Code, URL) |
-| Appendix B | Verbatim Ch.4 decision card sections (`###` + tables + prose) |
+| Appendix B | Verbatim Ch.6 decision card sections (`###` + tables + prose) |
 
 **Example (body):**
 
@@ -182,17 +183,17 @@ Never use community-only sources for Tier-1 **참고:** links.
 
 ## Prohibited
 
-- Ch.4 Tier-1 as a wall of `> **결정:**` blockquotes without metadata table + **근거 설명:**
+- Ch.5 Tier-1 as a wall of `> **결정:**` blockquotes without metadata table + **근거 설명:**
 - **근거 설명:** or **권장 이유:** with only URLs and no prose
 - **참고:** URLs without one-line annotation per link
 - **갈림** without alternatives comparison table (≥2 rows) and **권장 이유:**
 - Ch.2–6 technical claim with `[ref:A-n]` but no matching Appendix A row
-- `> **사실:**` blockquotes in Ch.5–6 (use Appendix A instead)
+- `> **사실:**` blockquotes in Ch.5–7 (use Appendix A instead)
 - Tier-1 decision with only PRD reference (must add official URL in **참고:**)
 - Fabricated URLs or paths
 - Picking one Tier-1 option in prose without a decision card
-- Multiple parallel To-Be designs in Ch.5 for the same fork
+- Multiple parallel To-Be designs in Ch.4 for the same fork
 
 ## Appendix A coverage (strict + narrative)
 
-Each Ch.5–6 ### with a markdown table or ≥120 chars should cite ≥1 `[ref:A-n]` when stating PRD/code facts. Every `[ref:A-n]` in the body (Ch.2–6) must resolve to an Appendix A row. Enforced by `validate-tdd.py --narrative`.
+Each Ch.5–7 ### with a markdown table or ≥120 chars should cite ≥1 `[ref:A-n]` when stating PRD/code facts. Every `[ref:A-n]` in the body (Ch.2–8) must resolve to an Appendix A row. Enforced by `validate-tdd.py --narrative`.

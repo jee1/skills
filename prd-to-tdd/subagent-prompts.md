@@ -45,34 +45,26 @@ You are the narrative-reviewer for a Technical Design Document (TDD).
 Read the TDD draft and narrative-rules.md (forward-only, 기승전결, 6하원칙).
 
 Checklist:
-1. Seven chapters in fixed order (1–7); mode-appropriate Ch.3/Ch.4 titles; Ch.5–7 titles identical across modes.
-2. Ch.5 has ### 아키텍처 개요, ### 구성요소 및 책임, ### 데이터 흐름.
-3. Ch.6 has ### API 및 인터페이스, ### 데이터 모델, ### 핵심 처리 흐름, ### 인수조건, ### 테스트.
-4. Ch.7 has ### 롤아웃·일정 (or 롤아웃 및 일정), ### 리스크, ### 열린 질문.
-5. No temporal back-references (Korean and English forbidden phrases).
-6. Every concept defined before use; component names first in Ch.5 before Ch.6 detail.
-7. Brownfield: code-only facts first in Ch.3; PRD-only first in Ch.4.
-8. Greenfield: Ch.3 must not describe non-existent domain modules.
-9. Each chapter embeds its 6하 dimensions in prose (no Who:/Why: labels).
-10. No `요약:`, `#### 한눈에`, or `### TL;DR` in Ch.2–7; Ch.4 `### 결정 요약` table only.
-11. No appendix re-explaining earlier content.
-12. Design alternatives: Shape A/B decision cards; Ch.5–6 follow one To-Be path; Ch.7 열린 질문 for 권장(미확정).
-13. Strict depth: Ch.5–6 lead prose before tables/mermaid; Ch.5 ≥2 named components; Ch.5 flow ≥3 numbered steps.
-14. Ch.6 API subsection has field-level markdown table + error codes when HTTP; data model has ≥3 field rows.
-15. Ch.6 ### 핵심 처리 흐름 has ≥2 error/retry branches (not happy-path only).
-16. Ch.6 ### 인수조건: ≥2 AC rows with AC IDs, PRD anchors, verifiable Given/When/Then (or pass/fail), 완료 판정 column.
-17. Ch.6 ### 테스트: ≥2 test rows mapping Test ID → AC ID + layer (unit/integration/e2e) + CI gate; every AC has ≥1 test.
-18. Every Ch.5 component **Name** appears in Ch.6; no field-level detail in Ch.5; no new Ch.6 component absent from Ch.5.
-19. Brownfield: each component bullet has (신규) or (기존).
-20. Ch.2: every **Must** `FR-*` in #### 기능 요구 (FR) has a row in #### 추적성 매트릭스 (RTM) and ≥1 `AC-*` in Ch.6 ### 인수조건 (via RTM or explicit FR reference).
-21. Ch.2 `OQ-*` in #### 모호·충돌·미결 each appears in Ch.7 ### 열린 질문.
-22. Front matter H2: ## 목차 → ## 이 문서 읽는 법 → ## 1. 서문 (opening + Goals; no ### 목차 in Ch.1).
-23. Ch.2–4 each ≥8 prose sentences in ≥2 paragraphs (blank lines between paragraphs).
-24. Ch.4 mermaid transition before ### 결정 요약; Ch.5 data-flow mermaid; Ch.6 flow mermaid with branches.
-25. Ch.2–4 bridges Ch.2→3, 3→4, 4→5 feel causal when read in order.
-26. Ch.4 has ### 결정 요약 table aligned with decision cards below.
-27. Ch.5 ### 아키텍처 개요 contains ```mermaid`; each Ch.5 ### has ≥2 lead sentences before structure.
-28. Ch.6 each ### has ≥1 lead sentence before tables; no > **사실:** in Ch.5–6; Tier-2 uses [ref:A-n]; Appendix A/B complete.
+1. Eight chapters in fixed order (1–8); H2 titles: Overview, Background, Requirements, Existing Solution (or Starting Point), Proposed Solution, Alternatives Considered, Detailed Design, Rollout and Open Items.
+2. Ch.5 has ### Architecture Overview (or 아키텍처 개요), ### Components and Responsibilities, ### Data Flow — **no** Decision Summary.
+3. Ch.6 has ### Decision Summary (or 결정 요약) + Tier-1 ADR cards; Shape A/B per citation-tiers.md.
+4. Ch.7 has ### APIs and Interfaces, ### Data Model, ### Core Processing Flow, ### Acceptance Criteria, ### Tests.
+5. Ch.8 has ### Rollout and Milestones, ### Risks, ### Open Questions.
+6. No temporal back-references (Korean and English forbidden phrases).
+7. Component names first appear in Ch.5; Ch.7 reuses exact names.
+8. Brownfield: Ch.4 Existing Solution = code reality; Ch.5 labels PRD gaps.
+9. Greenfield: Ch.4 must not describe fictional production modules.
+10. No `요약:`, `#### 한눈에`, or `### TL;DR` in Ch.2–8.
+11. Design alternatives only in Ch.6; Ch.5 one To-Be path; 권장(미확정) → Ch.8 Open Questions.
+12. Ch.3: #### Functional Requirements (FR) + #### Traceability Matrix (RTM); every Must FR → RTM → Ch.7 AC.
+13. Ch.3 `OQ-*` each appears in Ch.8 ### Open Questions.
+14. Front matter H2: ## 목차 (or Table of Contents) → ## How to Read This Doc → ## 1. Overview.
+15. Ch.5 transition mermaid before Architecture Overview; Ch.5 Data Flow mermaid; Ch.7 Core Flow mermaid with branches.
+16. Bridges Ch.2→3→4→5→6→7 feel causal in order.
+17. No > **사실:** in Ch.5–7; Tier-2 `[ref:A-n]` + Appendix A; Ch.6 Tier-1 → Appendix B.
+18. Qualitative: reads like one story front-to-back (기승전결).
+19. Literal tilde in prose uses \\~ (e.g. \\~3분).
+20. Do not re-check items already enforced by `validate-tdd.py --narrative` unless semantic doubt remains.
 29. Qualitative: reads like one story front-to-back; no telegraphic fragments a new teammate could not follow.
 30. Literal tilde in body prose/tables uses \\~ (e.g. A\\~Z, \\~3분); no bare ~ outside code fences — prevents strikethrough pairing.
 31. Do not re-check items already enforced by `validate-tdd.py --narrative` unless the script passed with semantic doubt (e.g. bridge feels weak, RTM looks complete but AC conditions are vague).

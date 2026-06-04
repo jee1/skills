@@ -1,12 +1,12 @@
-# TDD Output Template
+# TDD Output Template (Google Design Doc)
 
-Copy this skeleton. Replace `{{placeholders}}`. Write chapters **in order**; complete one before starting the next.
+Copy this skeleton. Replace `{{placeholders}}`. Write chapters **1 → 8 in order**; for design depth, draft **Ch.5 → Ch.6 → Ch.7** after Ch.1–4.
 
-Complete [outline-template.md](outline-template.md) **before** filling this template.
+Complete [outline-template.md](outline-template.md) before filling sections.
 
 ```markdown
 ---
-title: "TDD: {{feature_title}}"
+title: "Design Doc: {{feature_title}}"
 feature: {{feature_slug}}
 mode: {{brownfield|greenfield}}
 prd_source: "{{path_or_google_docs_url}}"
@@ -15,86 +15,89 @@ validation_passed: false
 review_rounds: 0
 ---
 
-# {{feature_title}} — Technical Design Document
+# {{feature_title}} — Design Document
 
 ## 목차
 
-1. [서문](#1-서문)
-…
+1. [Overview](#1-overview)
+2. [Background](#2-background)
+3. [Requirements](#3-requirements)
+4. [Existing Solution](#4-existing-solution) <!-- greenfield: [Starting Point](#4-starting-point) -->
+5. [Proposed Solution](#5-proposed-solution)
+6. [Alternatives Considered](#6-alternatives-considered)
+7. [Detailed Design](#7-detailed-design)
+8. [Rollout and Open Items](#8-rollout-and-open-items)
 
-## 이 문서 읽는 법
+## How to Read This Doc
 
-| 독자 | 먼저 볼 곳 | 목표 |
-|------|-----------|------|
-| PM | ## 1. 서문 opening + Goals → [§2 요구사항 분석](#요구사항-분석) → [§5](#5-상위설계) diagram | \~3분 |
-| Dev | [§2 요구사항 분석](#요구사항-분석) → [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) tables | \~5분 |
-| QA | [§2](#2-배경과-문제) RTM → [§6](#6-상세설계) [인수조건](#인수조건) → [테스트](#테스트) | \~3분 |
-| 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | \~3분 |
+| Reader | Start here | Goal |
+|--------|------------|------|
+| PM | Ch.1 Overview + Goals → Ch.3 Requirements → Ch.5 diagram | \\~3 min |
+| Dev (build) | Ch.5 → Ch.6 → Ch.7 tables | \\~5 min |
+| Dev (linear) | Ch.3 RTM → Ch.5 → Ch.6 → Ch.7 | \\~8 min |
+| QA | Ch.3 RTM → Ch.7 Acceptance Criteria → Tests | \\~3 min |
+| Audit | Ch.6 Decision Summary → Appendix A | \\~3 min |
 
-## 1. 서문
+## 1. Overview
 
-{{3–5 sentences: who needs this, why now, PRD source, expected outcome, rollout hint. No ### TL;DR.}}
+{{3–5 sentences: audience, why now, PRD source, expected outcome. No ### TL;DR.}}
 
 ### Goals / Non-Goals
 
 **Goals:**
 - …
-- …
 
 **Non-Goals:**
 - …
 
-## 2. 배경과 문제
+## 2. Background
 
-{{≥8 sentences in 2–4 paragraphs (blank line between paragraphs); no `요약:` prefix}}
+{{≥8 sentences in 2–4 paragraphs; problem, scope, motivation; no requirement tables here.}}
 
-### 요구사항 분석
+## 3. Requirements
 
-{{≥2 sentences: PRD를 FR/NFR/제약으로 정제했으며, Ch.6 인수조건의 상위 목록이다. 마지막 문장은 Ch.3 현재 시스템 대조로 이어지게 쓴다.}}
+{{≥2 sentences: PRD refined into traceable IDs; bridge into Ch.4 Existing/Starting Point.}}
 
-#### 기능 요구 (FR)
+#### Functional Requirements (FR)
 
-| FR ID | PRD | 요구 설명 (shall) | 우선순위 | 구현 상태 | 비고 |
-|-------|-----|-------------------|----------|-----------|------|
-| FR-1 | [source:prd#…] | … | Must | 미구현 | Ch.4 갭 |
+| FR ID | PRD | Requirement (shall) | Priority | Impl. status | Notes |
+|-------|-----|---------------------|----------|--------------|-------|
+| FR-1 | [source:prd#…] | … | Must | 미구현 | Ch.5 gap |
 
-<!-- Brownfield: 구현 상태 = 구현됨 / 부분 / 미구현 / PRD-only / 코드-only(문서화). Greenfield: 열 생략 또는 N/A -->
+<!-- Brownfield: Impl. status = 구현됨/부분/미구현/PRD-only/코드-only. Greenfield: omit column or N/A -->
 
-#### 비기능 요구 (NFR)
+#### Non-Functional Requirements (NFR)
 
-| NFR ID | PRD | 요구 | 목표치 | 검증 방법 (개략) |
-|--------|-----|------|--------|------------------|
+| NFR ID | PRD | Requirement | Target | Verification (draft) |
+|--------|-----|-------------|--------|----------------------|
 | NFR-1 | [source:prd#…] | … | … | … |
 
-#### 제약·가정·의존성
+#### Constraints / Assumptions / Dependencies
 
-| 유형 | ID | 내용 | 영향 |
-|------|-----|------|------|
-| 제약 | CON-1 | … | 범위 |
-| 가정 | ASM-1 | … | Ch.4 |
-| 의존성 | DEP-1 | … | 통합 |
+| Type | ID | Content | Impact |
+|------|-----|---------|--------|
+| Constraint | CON-1 | … | Scope |
 
-#### 모호·충돌·미결
+#### Ambiguity / Conflicts / Open (draft)
 
-| ID | 유형 | 설명 | 처리 |
-|----|------|------|------|
-| OQ-1 | 모호 | … | Ch.7 열린 질문 |
+| ID | Type | Description | Handling |
+|----|------|-------------|----------|
+| OQ-1 | Ambiguous | … | Ch.8 |
 
-#### 추적성 매트릭스 (RTM)
+#### Traceability Matrix (RTM)
 
-| PRD 앵커 | REQ ID | (예정) AC ID | 설계 반영 (Ch.5–6) | 테스트 |
-|----------|--------|--------------|-------------------|--------|
+| PRD anchor | REQ ID | (planned) AC ID | Design hook (Ch.6–7) | Test ID |
+|------------|--------|-----------------|----------------------|---------|
 | [source:prd#…] | FR-1 | AC-1 | … | T-1 |
 
-## 3. 현재 시스템
+## 4. Existing Solution
 
-<!-- Brownfield. Greenfield: "## 3. 시작점" -->
-{{≥8 sentences in 2–4 paragraphs — bridge from Ch.2}}
+<!-- Greenfield title: ## 4. Starting Point -->
+{{≥8 sentences in 2–4 paragraphs — what exists today; bridge to Ch.5 gap}}
 
-## 4. 갭과 설계 전환
+## 5. Proposed Solution
 
-<!-- Greenfield: "## 4. 설계 결정" -->
-{{≥8 sentences in 2–4 paragraphs — bridge to Ch.5}}
+{{≥8 sentences: gap, direction, why this architecture closes FR gaps}}
 
 ```mermaid
 flowchart LR
@@ -102,127 +105,91 @@ flowchart LR
   Gap --> ToBe[…]
 ```
 
-### 결정 요약
+### Architecture Overview
 
-| # | 주제 | 선택 | 상태 | 근거 한줄 |
-|---|------|------|------|-----------|
-| 1 | … | … | 확정 | … |
-
-### {{decision_topic_1}}
-
-{{1–2 sentences: why this topic matters}}
-
-| 항목 | 내용 |
-|------|------|
-| 결정 | … |
-| 상태 | 확정 |
-| 코드 | `path:line` or (Greenfield — 코드 없음) |
-
-**근거 설명:** {{≥2 sentences — why this choice; not links alone}}
-
-**참고:** [label](https://official-doc) — one-line annotation
-
-<!-- Fork example (Shape B): replace metadata table + add alternatives table -->
-
-<!--
-### {{fork_topic}}
-
-| 항목 | 내용 |
-|------|------|
-| 갈림 | … |
-| 권장 | (A) … |
-| 상태 | 권장(미확정) |
-| 코드 | … |
-
-| 대안 | 설명 | 장점 | 단점 | PRD/코드 적합도 |
-|------|------|------|------|-----------------|
-| (A) … | … | … | … | … |
-| (B) … | … | … | … | … |
-
-**권장 이유:** …
-
-**참고:** …
--->
-
-## 5. 상위설계
-
-{{Chapter intro prose optional}}
-
-### 아키텍처 개요
-
-{{≥2 sentences: why this architecture follows Ch.4. Then mermaid.}}
+{{≥2 sentences, then mermaid}}
 
 ```mermaid
 flowchart LR
   …
 ```
 
-### 구성요소 및 책임
+### Components and Responsibilities
 
-{{≥2 sentences. Then component bullets `(신규|기존)`.}}
+{{≥2 sentences, then bullets `(new|existing)`}}
 
-### 데이터 흐름
+### Data Flow
 
-{{≥2 sentences. Then mermaid sequence/flow, then optional numbered steps.}}
+{{≥2 sentences, then mermaid + numbered steps}}
 
 ```mermaid
 sequenceDiagram
   …
 ```
 
-## 6. 상세설계
+## 6. Alternatives Considered
 
-{{Optional dev index table after chapter intro — no ### heading}}
+{{≥2 sentences: Tier-1 choices that **implement Ch.5**; do not repeat HLD diagrams.}}
 
-### API 및 인터페이스
+### Decision Summary
 
-{{≥1 sentence before tables}}
+| # | Topic | Choice | Status | One-line rationale |
+|---|-------|--------|--------|-------------------|
+| 1 | … | … | Confirmed | … |
 
-### 데이터 모델
+### {{decision_topic_1}}
 
-{{≥1 sentence before tables}}
+{{Shape A/B card per citation-tiers.md}}
 
-### 핵심 처리 흐름
+## 7. Detailed Design
 
-{{≥1 sentence before mermaid + error branches}}
+{{Optional dev index table after intro — no ### heading}}
+
+### APIs and Interfaces
+
+### Data Model
+
+### Core Processing Flow
 
 ```mermaid
 flowchart TD
   …
 ```
 
-### 인수조건
+### Cross-cutting Concerns
 
-{{≥1 sentence: AC define verifiable “done”; each row traces to PRD [source:prd#…]}}
+{{Security, privacy, observability — short prose blocks}}
 
-| AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
-|-------|-----|----------|----------|-----------|
-| AC-1 | [source:prd#…] | Given … When … Then … | Must | Test T-1 passes in CI |
+### Acceptance Criteria
 
-### 테스트
+| AC ID | PRD | Criterion (Given/When/Then) | Priority | Done when |
+|-------|-----|------------------------------|----------|-----------|
+| AC-1 | [source:prd#…] | Given … When … Then … | Must | T-1 passes in CI |
 
-{{≥1 sentence: test layers prove AC; brownfield cite existing test paths}}
+### Tests
 
-| Test ID | AC ID | Layer | 시나리오 | Fixture / Mock | CI gate |
-|---------|-------|-------|----------|----------------|---------|
+| Test ID | AC ID | Layer | Scenario | Fixture / Mock | CI gate |
+|---------|-------|-------|----------|------------------|---------|
 | T-1 | AC-1 | integration | … | … | yes |
 
-## 7. 마무리
+## 8. Rollout and Open Items
 
-### 롤아웃·일정
-…
+### Rollout and Milestones
 
-### 리스크
+### Risks
+
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 
-### 열린 질문
+### Open Questions
+
 - …
 
-## 부록 A. 출처·코드 위치
-| ID | 주장 | PRD | Code | External URL |
+## Appendix A. Sources and Code Locations
 
-## 부록 B. Ch.4 결정 전문
+| ID | Claim | PRD | Code | External URL |
 
-{{Copy each Ch.4 `### {주제}` decision card verbatim — metadata table + prose + alternatives table if fork}}
+## Appendix B. Ch.6 Decision Cards (verbatim)
+
+{{Copy each Ch.6 `### {topic}` decision card}}
 ```

@@ -1,146 +1,133 @@
-# Narrative Rules — Story-First TDD
+# Narrative Rules — Design Doc + 기승전결
 
-TDD prose must read **front to back like a novel**. Each chapter builds on what earlier chapters established. **Do not use role labels** (`요약:`, `#### 한눈에`, `Who:`/`Why:`) — the reader should infer purpose from the writing.
+Output is a **Google Design Doc** skeleton (8 numbered H2 chapters). Prose must read **front to back** like a novel: each chapter builds on the prior one. **Forward-only** — no temporal back-references.
 
-Detail rules for Ch.5–6: [design-sections.md](design-sections.md).
+Detail rules for Proposed / Alternatives / Detailed Design: [design-sections.md](design-sections.md).
 
-## 기승전결 Mapping
+## Document skeleton (Design Doc)
+
+| # | H2 (brownfield) | H2 (greenfield) | Design Doc section |
+|---|-----------------|-----------------|-------------------|
+| 1 | Overview | Overview | Overview + `### Goals / Non-Goals` |
+| 2 | Background | Background | Background / Context |
+| 3 | Requirements | Requirements | Requirements trace (PRD extension) |
+| 4 | Existing Solution | Starting Point | Existing solution |
+| 5 | Proposed Solution | Proposed Solution | Proposed solution (architecture) |
+| 6 | Alternatives Considered | Alternatives Considered | Alternatives + ADR cards |
+| 7 | Detailed Design | Detailed Design | Detailed design + testability |
+| 8 | Rollout and Open Items | Rollout and Open Items | Rollout, risks, open questions |
+
+**Write order (Phase 4):** Ch.5 Proposed → Ch.6 Alternatives → Ch.7 Detailed (then Ch.8 if not drafted with Ch.1–4).
+
+**Read order:** Ch.1 → Ch.2 → Ch.3 → Ch.4 → Ch.5 → Ch.6 → Ch.7 → Ch.8 (linear). Optional skim: Ch.5 diagram → Ch.6 `### Decision Summary` → Ch.7 AC.
+
+## 기승전결 (narrative arc)
 
 | Chapter | Role | Narrative job |
 |---------|------|---------------|
-| 1. 서문 | 起 | Opening paragraph + scope; why this document exists |
-| 2. 배경과 문제 | 起→承 | Problem and scope in connected prose; then `### 요구사항 분석` (FR/NFR/RTM) |
-| 3. 현재 시스템 / 시작점 | 承 | What exists today (code or scaffold); contrasts FR **구현 상태** |
-| 4. 갭과 설계 전환 / 설계 결정 | 转 | Gap → why change; Tier-1 decisions |
-| 5. 상위설계 | 结 (macro) | Target architecture as a consequence of Ch.4 |
-| 6. 상세설계 | 结 (micro) | Spec tables, **acceptance criteria**, **tests** grounded in Ch.5 names |
-| 7. 마무리 | 结 (close) | Rollout, risks, open questions |
+| 1 Overview | 起 | Why this doc; who reads; PRD source; Goals/Non-Goals |
+| 2 Background | 起→承 | Problem, scope, motivation (prose only) |
+| 3 Requirements | 承 | FR/NFR/RTM tables — bridge to existing/proposed |
+| 4 Existing / Starting Point | 承 | As-Is or scaffold; FR **구현 상태** grounding |
+| 5 Proposed Solution | 转 | Gap → to-be; HLD diagrams; **no** decision cards |
+| 6 Alternatives Considered | 转→结 | Tier-1 ADR cards after architecture is shown |
+| 7 Detailed Design | 结 (micro) | APIs, entities, flows, AC, tests |
+| 8 Rollout and Open Items | 结 (close) | Deploy, risks, `OQ-*` from Ch.3 |
+
+## Layer rules (what goes where)
+
+| Layer | Chapter | Belongs | Does **not** belong |
+|-------|---------|---------|---------------------|
+| Requirements | Ch.3 | `FR-*`, RTM, `OQ-*` draft | Tier-1 decision cards |
+| As-Is | Ch.4 | Code/scaffold reality | Target architecture diagrams |
+| **Proposed** | Ch.5 | Gap, mermaid, `### Architecture Overview`, components, data flow | `### Decision Summary`, ADR cards |
+| **Alternatives** | Ch.6 | `### Decision Summary`, Shape A/B cards | Duplicate HLD from Ch.5 |
+| **Detail** | Ch.7 | APIs, entities, flow, AC, tests, optional `### Cross-cutting Concerns` | New major component names |
+
+Ch.6 opening **must** state that decisions **implement Ch.5** (e.g. “The Proposed Solution in Ch.5 requires …; this chapter locks Tier-1 choices.”).
 
 ## 6하원칙 (embedded in prose — no labels)
 
-Answer each dimension **inside normal sentences**. Never prefix lines with `Who:` / `Why:` / `누가:` / `왜:`.
+Never prefix lines with `Who:` / `Why:` / `누가:` / `왜:`. Answer inside normal sentences.
 
 | Chapter | Must answer (in prose) |
 |---------|------------------------|
 | 1 | Who reads this, why now, PRD source |
-| 2 | What problem, where (scope/boundary); structured REQ IDs before design |
-| 3 | What exists, how it works today |
-| 4 | What changes, why, how (direction) |
-| 5 | What the target system does, how at high level |
-| 6 | What interfaces/entities exist, how in detail; **what proves done** (AC + tests) |
-| 7 | When rollout, how to deploy, remaining risks |
+| 2 | What problem, where (scope) |
+| 3 | (tables carry REQ IDs; lead prose bridges to Ch.4) |
+| 4 | What exists today |
+| 5 | What changes; target structure |
+| 6 | Which Tier-1 choices; why; alternatives |
+| 7 | Interfaces, entities, how; what proves done |
+| 8 | When rollout; risks; remaining questions |
 
-**Minimum:** Ch.2, Ch.3, Ch.4 each **≥8 sentences** of non-table body (enforced by `--narrative`).
+**Minimum prose:** Ch.2, Ch.4, Ch.5, Ch.6 each **≥8 sentences** in non-table body (`--narrative`). Ch.3 may be table-heavy if lead prose ≥80 chars.
 
 ## Chapter bridges
 
-The **last sentence** of chapter N must connect to the **first sentence** of chapter N+1:
+The **last sentence** of chapter N must connect to the **first sentence** of chapter N+1 (shared domain noun or `때문`, `따라`, `현재`, `PRD`, `미구현`, `갭`, …).
 
-- Shared domain noun (order, payment, API, …), **or**
-- Explicit consequence words: `때문`, `따라`, `현재`, `PRD`, `미구현`, `갭`, …
+Forbidden: `앞서`, `위에서`, `see above`, `later in this document` — **restate** context instead.
 
-Forbidden: temporal back-refs (`앞서`, `위에서`, `see above`) — **restate** needed context instead.
-
-## Anti-label policy (Ch.2–7 body)
+## Anti-label policy (Ch.2–8 body)
 
 | Forbidden | Allowed |
 |-----------|---------|
-| `요약:` line prefix | Topic `###` titles (e.g. `### API 및 인터페이스`) |
-| `#### 한눈에` | Ch.4 `### 결정 요약` (audit index table only) |
-| `### TL;DR` in body | `## 목차`, `## 이 문서 읽는 법`, Ch.1 `### Goals / Non-Goals` |
-| `Who:` / `Why:` / `누가:` / `왜:` … | `[ref:A-n]`, Ch.4 Tier-1 decision cards |
+| `요약:` line prefix | Topic `###` titles |
+| `#### 한눈에` | Ch.6 `### Decision Summary` (index table only) |
+| `### TL;DR` in body | `## 목차`, `## How to Read`, Ch.1 `### Goals / Non-Goals` |
+| `Who:` / `Why:` labels | `[ref:A-n]`, Ch.6 decision cards |
 
-## Prose-then-table (Ch.5–6)
+## Prose-then-table (Ch.5–7)
 
-Each `###` subsection:
+Each `###` subsection: lead prose first (Ch.5 architecture ###: ≥2 sentences; Ch.7: ≥1), then mermaid/tables.
 
-1. **Lead prose** — Ch.5: ≥2 sentences before diagram/lists/tables; Ch.6: ≥1 sentence before tables
-2. **Structure** — mermaid (Ch.5 architecture), tables, numbered flows
-3. **Tier-2** — `[ref:A-n]` inline; Appendix A row; **no** `> **사실:**` in Ch.5–6
+Ch.7 may include a **dev index table** after chapter intro (no `###` heading), introduced in prose.
 
-Ch.6 may include a **dev index table** right after the chapter intro paragraph (no `###` heading). Introduce it in prose: “아래 표는 …”.
+## Forward-only rules
 
-## Forward-Only Rules
+1. No temporal back-reference (validator list in `validate-tdd.py`).
+2. Define before use — component names first in Ch.5, reused in Ch.7.
+3. **Brownfield:** code wins on PRD conflict; label in Ch.5 gap prose.
+4. **Greenfield:** Ch.4 = scaffold only; no fictional As-Is modules.
+5. Appendices A/B = citation archives only — no repair narrative.
 
-1. **No temporal back-reference** — see forbidden list in validator (`validate-tdd.py`).
-2. **Define before use** — introduce terms and component names before reusing them.
-3. **Brownfield:** code reality in Ch.3; PRD-only in Ch.4 as `미구현`; conflict → code wins, labeled in Ch.4.
-4. **Greenfield:** Ch.3 states no domain code; Ch.4 introduces decisions from PRD + stack.
-5. **No repair appendix** — Appendix A/B are citation archives only.
-6. **Static anchors OK** — `[§6](#6-상세설계)`, `[ref:A-3]`; not “see above”.
+## Front matter (before `## 1. Overview`)
 
-## Front matter (before ## 1. 서문)
-
-1. `## 목차` — document map (first H2 after `#` title)
-2. `## 이 문서 읽는 법` — reader path table
+1. `## 목차`
+2. `## How to Read This Doc`
 
 No prose between `#` title and `## 목차`.
 
-## Ch.1 서문
+## Ch.1 Overview
 
-- **Opening paragraph** (no subsection title): 3–5 sentences before `### Goals / Non-Goals`
-- **Do not use** `### TL;DR`, `### 목차`, or `### 이 문서 읽는 법` inside Ch.1
-
-Opening must lead into Ch.2.
-
-## Paragraph breaks (Ch.2–4)
-
-- **2–4 paragraphs** per chapter, separated by one blank line
-- **1–4 sentences** per paragraph (split before a fifth sentence in the same block)
-- Enforced by `--narrative` (`ch234-paragraph-runon`, `ch234-paragraph-sparse`)
+- Opening paragraph (3–5 sentences) before `### Goals / Non-Goals`
+- No `### 목차` or `### How to Read` inside Ch.1
 
 ## Flow diagrams (`--narrative`)
 
 | Location | Diagram |
 |----------|---------|
-| Ch.4 (before `### 결정 요약`) | as-is → gap → to-be transition |
-| Ch.5 `### 아키텍처 개요` | component box diagram (strict too) |
-| Ch.5 `### 데이터 흐름` | sequence or flow mermaid |
-| Ch.6 `### 핵심 처리 흐름` | flowchart with ≥2 error branches |
+| Ch.5 (before `### Architecture Overview`) | as-is → gap → to-be |
+| Ch.5 `### Architecture Overview` | component box mermaid |
+| Ch.5 `### Data Flow` | sequence/flow mermaid |
+| Ch.7 `### Core Processing Flow` | flowchart with ≥2 error branches |
 
-## Design Alternatives — When Multiple Options Exist
+## Design alternatives
 
-Use the decision tree in Phase 3 outline (unchanged):
-
-| Situation | Ch.4 format | Ch.5–6 | Ch.7 |
+| Situation | Ch.6 format | Ch.5–7 | Ch.8 |
 |-----------|-------------|--------|------|
-| Single clear winner | Shape A decision card | Follows decision | Standard |
-| Real fork | Shape B + alternatives table + `권장(미확정)` | Follows **권장** | 열린 질문 |
-| Tier-1 high impact | Ask user first | After confirm | Standard |
+| Single winner | Shape A card | Ch.5 shows chosen structure | Standard |
+| Real fork | Shape B + `권장(미확정)` | Ch.5 shows **권장** path only | Open Questions |
+| Tier-1 high impact | Ask user (Phase 3b) | After confirm | Standard |
 
-Ch.5–6 follow **one** narrative path (권장 or 확정). Component **names** first appear in Ch.5 prose; Ch.6 reuses them.
+## Outline self-check (Phase 3)
 
-## Outline Self-Check (before drafting)
+- [ ] Requirements inventory complete (Ch.3 rows)
+- [ ] Ch.5 ≥2 component names; Ch.7 APIs/entities/flows/AC/tests mapped
+- [ ] Bridge plan: Ch.2→3, 3→4, 4→5, 5→6, 6→7 sketched
+- [ ] Tier-1 tags land in Ch.6; user confirm for `needs-user-confirm`
 
-- [ ] Concept introduction order (outline rows)
-- [ ] Ch.5 ≥2 component names; Ch.6 APIs/entities/flows/AC/tests mapped
-- [ ] Requirements inventory complete (FR + RTM) before Ch.4
-- [ ] Bridge plan: last line of Ch.2 (after ### 요구사항 분석)→3, 3→4, 4→5 sketched
-- [ ] Tier-1 in Ch.4; user confirm for `needs-user-confirm`
-- [ ] No chapter depends on a later chapter
+## Literal tilde (`~`)
 
-## Markdown — literal tilde (`~`)
-
-Many Markdown renderers treat **unescaped** `~` as strikethrough delimiters and pair them across the document. A range like `A~Z` early in the file can turn everything until the next bare `~` (e.g. `~3분` in a table) into strikethrough.
-
-**Rule:** Any tilde meant to appear as text must be written **`\\~`** (backslash + tilde).
-
-| Use case | Write | Do not write |
-|----------|-------|--------------|
-| Range | `A\\~Z`, `1\\~5`, `v1\\~v2` | `A~Z` |
-| Approximation | `\\~3분`, `\\~100ms` | `~3분` |
-| Version span | `Node 18\\~20` | `Node 18~20` |
-
-**Does not apply inside** fenced code blocks (`` ``` ``) — use normal `~` there.
-
-Enforced by `validate-tdd.py` (`unescaped-tilde`).
-
-## Common Violations
-
-| Bad | Good |
-|-----|------|
-| `요약: API layer …` | “The cancel request enters through the API layer, which …” |
-| `#### 한눈에` bullets repeating the section | One clear prose paragraph; tables hold spec |
-| Ch.5 names a service never mentioned in Ch.4 | Ch.4 states the gap/decision that introduces the service |
-| Telegraphic Ch.2 (“PRD requires X.”) | Full paragraph: who is affected, where in product, why it matters |
-| `A~Z`, `~3분` in prose/tables | `A\\~Z`, `\\~3분` |
+Write **`\\~`** in prose/tables (`A\\~Z`, `\\~3분`). Bare `~` breaks Markdown strikethrough. OK inside ` ``` ` fences.

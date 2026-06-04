@@ -29,57 +29,58 @@ REQUIRED_FRONTMATTER_KEYS = frozenset(
 
 CHAPTER_HEADERS = {
     "brownfield": [
-        r"##\s+1\.\s+서문",
-        r"##\s+2\.\s+배경과\s+문제",
-        r"##\s+3\.\s+현재\s+시스템",
-        r"##\s+4\.\s+갭과\s+설계\s+전환",
-        r"##\s+5\.\s+상위설계",
-        r"##\s+6\.\s+상세설계",
-        r"##\s+7\.\s+마무리",
+        r"##\s+1\.\s+Overview",
+        r"##\s+2\.\s+Background",
+        r"##\s+3\.\s+Requirements",
+        r"##\s+4\.\s+Existing\s+Solution",
+        r"##\s+5\.\s+Proposed\s+Solution",
+        r"##\s+6\.\s+Alternatives\s+Considered",
+        r"##\s+7\.\s+Detailed\s+Design",
+        r"##\s+8\.\s+Rollout\s+and\s+Open\s+Items",
     ],
     "greenfield": [
-        r"##\s+1\.\s+서문",
-        r"##\s+2\.\s+배경과\s+문제",
-        r"##\s+3\.\s+시작점",
-        r"##\s+4\.\s+설계\s+결정",
-        r"##\s+5\.\s+상위설계",
-        r"##\s+6\.\s+상세설계",
-        r"##\s+7\.\s+마무리",
+        r"##\s+1\.\s+Overview",
+        r"##\s+2\.\s+Background",
+        r"##\s+3\.\s+Requirements",
+        r"##\s+4\.\s+Starting\s+Point",
+        r"##\s+5\.\s+Proposed\s+Solution",
+        r"##\s+6\.\s+Alternatives\s+Considered",
+        r"##\s+7\.\s+Detailed\s+Design",
+        r"##\s+8\.\s+Rollout\s+and\s+Open\s+Items",
     ],
 }
 
-CH2_REQ_SUBSECTION = re.compile(r"^###\s+요구사항\s+분석\s*$", re.M)
-CH2_FR_HEADING = re.compile(r"^####\s+기능\s+요구\s*\(FR\)\s*$", re.M)
-CH2_RTM_HEADING = re.compile(r"^####\s+추적성\s+매트릭스\s*\(RTM\)\s*$", re.M)
+CH3_REQ_OPTIONAL = re.compile(r"^###\s+요구사항\s+분석\s*$", re.M)  # legacy
+CH3_FR_HEADING = re.compile(r"^####\s+(?:기능\s+요구\s*\(FR\)|Functional\s+Requirements\s*\(FR\))\s*$", re.M)
+CH3_RTM_HEADING = re.compile(r"^####\s+(?:추적성\s+매트릭스\s*\(RTM\)|Traceability\s+Matrix\s*\(RTM\))\s*$", re.M)
 FR_ID = re.compile(r"\bFR-\d+\b", re.I)
 REQ_ID = re.compile(r"\b(?:FR|NFR|CON|ASM|DEP|OQ)-\d+\b", re.I)
 OQ_ID = re.compile(r"\bOQ-\d+\b", re.I)
 MUST_PRIORITY = re.compile(r"\bMust\b", re.I)
-CH2_OQ_HEADING = re.compile(r"^####\s+모호[·•]충돌[·•]미결\s*$", re.M)
+CH3_OQ_HEADING = re.compile(r"^####\s+(?:모호[·•]충돌[·•]미결|Ambiguity\s*/\s*Conflicts\s*/\s*Open\s*\(draft\))\s*$", re.M)
 RTM_AC_PLACEHOLDER = re.compile(r"\b(?:TBD|예정|미정)\b", re.I)
 MIN_FR_TABLE_ROWS = 2
 MIN_RTM_TABLE_ROWS = 2
 MIN_REQ_ANALYSIS_LEAD_CHARS = 80
 
-CH5_SUBSECTIONS = [
-    r"###\s+아키텍처\s+개요",
-    r"###\s+구성요소\s+및\s+책임",
-    r"###\s+데이터\s+흐름",
+CH5_PROPOSED_SUBSECTIONS = [
+    r"###\s+(?:Architecture\s+Overview|아키텍처\s+개요)",
+    r"###\s+(?:Components\s+and\s+Responsibilities|구성요소\s+및\s+책임)",
+    r"###\s+(?:Data\s+Flow|데이터\s+흐름)",
 ]
 
-CH6_SUBSECTIONS = [
-    r"###\s+API\s+및\s+인터페이스",
-    r"###\s+데이터\s+모델",
-    r"###\s+핵심\s+처리\s+흐름",
-    r"###\s+인수\s*조건",
-    r"###\s+테스트",
+CH7_DETAIL_SUBSECTIONS = [
+    r"###\s+(?:APIs\s+and\s+Interfaces|API\s+및\s+인터페이스)",
+    r"###\s+(?:Data\s+Model|데이터\s+모델)",
+    r"###\s+(?:Core\s+Processing\s+Flow|핵심\s+처리\s+흐름)",
+    r"###\s+(?:Acceptance\s+Criteria|인수\s*조건)",
+    r"###\s+(?:Tests|테스트)",
 ]
 
-CH7_SUBSECTIONS = [
-    r"###\s+롤아웃·일정",
-    r"###\s+롤아웃\s+및\s+일정",
-    r"###\s+리스크",
-    r"###\s+열린\s+질문",
+CH8_ROLLOUT_SUBSECTIONS = [
+    r"###\s+(?:Rollout\s+and\s+Milestones|롤아웃·일정|롤아웃\s+및\s+일정)",
+    r"###\s+(?:Risks|리스크)",
+    r"###\s+(?:Open\s+Questions|열린\s+질문)",
 ]
 
 TIER1_KEYWORDS = re.compile(
@@ -100,13 +101,13 @@ APPENDIX_B_HEADER = re.compile(r"^##\s+부록\s+B", re.M)
 MERMAID_FENCE = re.compile(r"```mermaid[\s\S]*?```", re.M)
 HANNUINE_HEADER = re.compile(r"^####\s+한눈에", re.M)
 CH1_GOALS = re.compile(r"^###\s+Goals\s*/\s*Non-Goals", re.M)
-CH1_READER = re.compile(r"^###\s+이\s+문서\s+읽는\s+법", re.M)
+CH1_READER = re.compile(r"^###\s+(?:How\s+to\s+Read|이\s+문서\s+읽는\s+법)", re.M)
 CH1_TOC = re.compile(r"^###\s+목차", re.M)
-FM_TOC = re.compile(r"^##\s+목차\s*$", re.M)
-FM_READER = re.compile(r"^##\s+이\s+문서\s+읽는\s+법\s*$", re.M)
-FM_CH1 = re.compile(r"^##\s+1\.\s+서문\s*$", re.M)
+FM_TOC = re.compile(r"^##\s+(?:목차|Table\s+of\s+Contents)\s*$", re.M)
+FM_READER = re.compile(r"^##\s+How\s+to\s+Read\s+This\s+Doc\s*$", re.M)
+FM_CH1 = re.compile(r"^##\s+1\.\s+Overview\s*$", re.M)
 DOC_TITLE = re.compile(r"^#\s+.+", re.M)
-CH4_SUMMARY = re.compile(r"^###\s+결정\s+요약", re.M)
+CH6_DECISION_SUMMARY = re.compile(r"^###\s+(?:Decision\s+Summary|결정\s+요약)", re.M)
 SASIL_BLOCK = re.compile(r"^\s*>\s*\*\*사실:\*\*", re.M)
 APPENDIX_A_ID = re.compile(r"^\|\s*(A-\d+)\s*\|", re.M)
 
@@ -171,7 +172,7 @@ FORK_BLOCK = re.compile(
     re.M,
 )
 
-# Decision card format (Ch.4 Tier-1)
+# Decision card format (Ch.5 Tier-1)
 MIN_RATIONALE_CHARS = 80
 DECISION_CARD_META = re.compile(r"\|\s*결정\s*\|", re.I)
 FORK_CARD_META = re.compile(r"\|\s*갈림\s*\|", re.I)
@@ -362,11 +363,20 @@ def _prose_paragraphs(chapter_text: str) -> list[str]:
     ]
 
 
-def _ch4_before_summary(ch4: str) -> str:
-    summary = CH4_SUMMARY.search(ch4)
+def _ch5_before_architecture(ch5: str) -> str:
+    arch = re.search(
+        r"^###\s+(?:Architecture\s+Overview|아키텍처\s+개요)\s*$", ch5, re.M
+    )
+    if arch:
+        return ch5[: arch.start()]
+    return ch5
+
+
+def _ch6_before_summary(ch6: str) -> str:
+    summary = CH6_DECISION_SUMMARY.search(ch6)
     if summary:
-        return ch4[: summary.start()]
-    return ch4
+        return ch6[: summary.start()]
+    return ch6
 
 
 def _mermaid_branch_signals(mermaid_body: str) -> int:
@@ -383,7 +393,7 @@ def _mermaid_branch_signals(mermaid_body: str) -> int:
 
 
 def check_front_matter(body: str) -> list[ValidationError]:
-    """H2 front matter before ## 1. 서문; Ch.1 opening + Goals only."""
+    """H2 front matter before ## 1. Overview; Ch.1 opening + Goals only."""
     errors: list[ValidationError] = []
     after_title = _body_after_doc_title(body)
     toc_m = FM_TOC.search(after_title)
@@ -392,8 +402,8 @@ def check_front_matter(body: str) -> list[ValidationError]:
 
     for pattern, code, label in (
         (FM_TOC, "frontmatter-toc-missing", "## 목차"),
-        (FM_READER, "frontmatter-reader-missing", "## 이 문서 읽는 법"),
-        (FM_CH1, "frontmatter-ch1-missing", "## 1. 서문"),
+        (FM_READER, "frontmatter-reader-missing", "## How to Read This Doc"),
+        (FM_CH1, "frontmatter-ch1-missing", "## 1. Overview"),
     ):
         if not pattern.search(after_title):
             errors.append(ValidationError(0, code, f"Missing {label} (H2 front matter before numbered chapters)"))
@@ -404,7 +414,7 @@ def check_front_matter(body: str) -> list[ValidationError]:
                 ValidationError(
                     0,
                     "frontmatter-order",
-                    "Front matter order must be: ## 목차 → ## 이 문서 읽는 법 → ## 1. 서문",
+                    "Front matter order must be: ## 목차 → ## How to Read This Doc → ## 1. Overview",
                 )
             )
         if after_title[: toc_m.start()].strip():
@@ -416,14 +426,14 @@ def check_front_matter(body: str) -> list[ValidationError]:
                 )
             )
 
-    ch1 = _chapter_slice(body, r"^##\s+1\.\s+서문", r"^##\s+2\.\s+")
+    ch1 = _chapter_slice(body, r"^##\s+1\.\s+Overview", r"^##\s+2\.\s+")
     if ch1:
         if CH1_TOC.search(ch1) or CH1_READER.search(ch1):
             errors.append(
                 ValidationError(
                     0,
                     "ch1-nested-frontmatter",
-                    "Move ### 목차 / ### 이 문서 읽는 법 to H2 ## sections before ## 1. 서문",
+                    "Move ### 목차 / ### How to Read This Doc to H2 ## sections before ## 1. Overview",
                 )
             )
         goals_m = CH1_GOALS.search(ch1)
@@ -431,7 +441,7 @@ def check_front_matter(body: str) -> list[ValidationError]:
             errors.append(ValidationError(0, "ch1-goals-missing", "Ch.1 missing ### Goals / Non-Goals"))
         else:
             opening = ch1[: goals_m.start()]
-            opening = re.sub(r"^##\s+1\.\s+서문\s*", "", opening, count=1, flags=re.M).strip()
+            opening = re.sub(r"^##\s+1\.\s+Overview\s*", "", opening, count=1, flags=re.M).strip()
             if _count_sentences(opening) < MIN_CH1_OPENING_SENTENCES:
                 errors.append(
                     ValidationError(
@@ -526,27 +536,27 @@ def _extract_component_names(text: str) -> list[str]:
 
 
 def check_design_depth(body: str, mode: str) -> list[ValidationError]:
-    """Strict profile: minimum content depth for Ch.5–6 subsections."""
+    """Strict profile: minimum content depth for Ch.5 Proposed + Ch.7 Detailed."""
     errors: list[ValidationError] = []
-    ch5 = _chapter_slice(body, r"^##\s+5\.\s+상위설계", r"^##\s+6\.\s+")
-    ch6 = _chapter_slice(body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
-    if not ch5 or not ch6:
+    ch5 = _chapter_slice(body, r"^##\s+5\.\s+", r"^##\s+6\.\s+")
+    ch7 = _chapter_slice(body, r"^##\s+7\.\s+", r"^##\s+8\.\s+")
+    if not ch5 or not ch7:
         return errors
 
     ch5_checks = [
-        (r"###\s+아키텍처\s+개요", "ch5-architecture"),
-        (r"###\s+구성요소\s+및\s+책임", "ch5-components"),
-        (r"###\s+데이터\s+흐름", "ch5-data-flow"),
+        (r"###\s+(?:Architecture\s+Overview|아키텍처\s+개요)", "ch5-architecture"),
+        (r"###\s+(?:Components\s+and\s+Responsibilities|구성요소\s+및\s+책임)", "ch5-components"),
+        (r"###\s+(?:Data\s+Flow|데이터\s+흐름)", "ch5-data-flow"),
     ]
-    ch6_checks = [
-        (r"###\s+API\s+및\s+인터페이스", "ch6-api"),
-        (r"###\s+데이터\s+모델", "ch6-data-model"),
-        (r"###\s+핵심\s+처리\s+흐름", "ch6-flow"),
-        (r"###\s+인수\s*조건", "ch6-ac"),
-        (r"###\s+테스트", "ch6-tests"),
+    ch7_checks = [
+        (r"###\s+(?:APIs\s+and\s+Interfaces|API\s+및\s+인터페이스)", "ch7-api"),
+        (r"###\s+(?:Data\s+Model|데이터\s+모델)", "ch7-data-model"),
+        (r"###\s+(?:Core\s+Processing\s+Flow|핵심\s+처리\s+흐름)", "ch7-flow"),
+        (r"###\s+(?:Acceptance\s+Criteria|인수\s*조건)", "ch7-ac"),
+        (r"###\s+(?:Tests|테스트)", "ch7-tests"),
     ]
 
-    for chapter, checks in ((ch5, ch5_checks), (ch6, ch6_checks)):
+    for chapter, checks in ((ch5, ch5_checks), (ch7, ch7_checks)):
         for pattern, _label in checks:
             line_num, content = _subsection_content(chapter, pattern)
             if not content:
@@ -561,14 +571,14 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
                     )
                 )
 
-    comp_line, components_sec = _subsection_content(ch5, r"###\s+구성요소\s+및\s+책임")
+    comp_line, components_sec = _subsection_content(ch5, r"###\s+(?:Components\s+and\s+Responsibilities|구성요소\s+및\s+책임)")
     component_names = _extract_component_names(components_sec)
     if len(component_names) < MIN_CH5_COMPONENTS:
         errors.append(
             ValidationError(
                 comp_line,
                 "ch5-insufficient-components",
-                f"Ch.5 ### 구성요소 needs ≥{MIN_CH5_COMPONENTS} named components (**Name** bullets or table)",
+                f"Ch.5 ### Components needs ≥{MIN_CH5_COMPONENTS} named components (**Name** bullets or table)",
             )
         )
 
@@ -586,29 +596,29 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
                     )
                 )
 
-    flow_line, flow_sec = _subsection_content(ch5, r"###\s+데이터\s+흐름")
+    flow_line, flow_sec = _subsection_content(ch5, r"###\s+(?:Data\s+Flow|데이터\s+흐름)")
     step_count = len(NUMBERED_STEP.findall(flow_sec))
     if step_count < MIN_DATA_FLOW_STEPS:
         errors.append(
             ValidationError(
                 flow_line,
                 "ch5-data-flow-steps",
-                f"Ch.5 ### 데이터 흐름 needs ≥{MIN_DATA_FLOW_STEPS} numbered steps (1. 2. 3.)",
+                f"Ch.5 ### Data Flow needs ≥{MIN_DATA_FLOW_STEPS} numbered steps (1. 2. 3.)",
             )
         )
 
-    api_line, api_sec = _subsection_content(ch6, r"###\s+API\s+및\s+인터페이스")
+    api_line, api_sec = _subsection_content(ch7, r"###\s+(?:APIs\s+and\s+Interfaces|API\s+및\s+인터페이스)")
     api_rows = _count_table_data_rows(api_sec)
     if api_rows < MIN_API_TABLE_DATA_ROWS:
         errors.append(
             ValidationError(
                 api_line,
-                "ch6-api-no-table",
-                f"Ch.6 ### API needs markdown table with ≥{MIN_API_TABLE_DATA_ROWS} data rows",
+                "ch7-api-no-table",
+                f"Ch.7 ### APIs needs markdown table with ≥{MIN_API_TABLE_DATA_ROWS} data rows",
             )
         )
 
-    model_line, model_sec = _subsection_content(ch6, r"###\s+데이터\s+모델")
+    model_line, model_sec = _subsection_content(ch7, r"###\s+(?:Data\s+Model|데이터\s+모델)")
     model_rows = _count_table_data_rows(model_sec)
     field_lines = len(
         [line for line in model_sec.splitlines() if re.search(r":\s*\w+|^\|\s*\w", line.strip())]
@@ -617,48 +627,48 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
         errors.append(
             ValidationError(
                 model_line,
-                "ch6-data-model-thin",
-                f"Ch.6 ### 데이터 모델 needs entity table (≥{MIN_ENTITY_FIELD_ROWS} field rows)",
+                "ch7-data-model-thin",
+                f"Ch.7 ### Data Model needs entity table (≥{MIN_ENTITY_FIELD_ROWS} field rows)",
             )
         )
 
-    proc_line, proc_sec = _subsection_content(ch6, r"###\s+핵심\s+처리\s+흐름")
+    proc_line, proc_sec = _subsection_content(ch7, r"###\s+(?:Core\s+Processing\s+Flow|핵심\s+처리\s+흐름)")
     error_lines = [line for line in proc_sec.splitlines() if ERROR_BRANCH.search(line)]
     if len(error_lines) < MIN_ERROR_BRANCH_LINES:
         errors.append(
             ValidationError(
                 proc_line,
-                "ch6-flow-no-errors",
-                f"Ch.6 ### 핵심 처리 흐름 needs ≥{MIN_ERROR_BRANCH_LINES} error/retry branches",
+                "ch7-flow-no-errors",
+                f"Ch.7 ### Core Processing Flow needs ≥{MIN_ERROR_BRANCH_LINES} error/retry branches",
             )
         )
 
     if component_names:
         for name in component_names:
-            if name not in ch6:
+            if name not in ch7:
                 errors.append(
                     ValidationError(
                         comp_line,
-                        "ch5-ch6-component-drift",
-                        f"Ch.5 component **{name}** must be referenced in Ch.6 상세설계",
+                        "ch5-ch7-component-drift",
+                        f"Ch.5 component **{name}** must be referenced in Ch.7 Detailed Design",
                     )
                 )
 
-    ac_line, ac_sec = _subsection_content(ch6, r"###\s+인수\s*조건")
+    ac_line, ac_sec = _subsection_content(ch7, r"###\s+(?:Acceptance\s+Criteria|인수\s*조건)")
     ac_rows = _count_table_data_rows(ac_sec)
     if ac_rows < MIN_AC_TABLE_ROWS:
         errors.append(
             ValidationError(
                 ac_line,
-                "ch6-ac-thin",
-                f"Ch.6 ### 인수조건 needs AC table with ≥{MIN_AC_TABLE_ROWS} data rows",
+                "ch7-ac-thin",
+                f"Ch.7 ### Acceptance Criteria needs AC table with ≥{MIN_AC_TABLE_ROWS} data rows",
             )
         )
     if ac_sec and not PRD_ANCHOR.search(ac_sec):
         errors.append(
             ValidationError(
                 ac_line,
-                "ch6-ac-no-prd",
+                "ch7-ac-no-prd",
                 "Ch.6 ### 인수조건 must trace rows to PRD ([source:prd#…])",
             )
         )
@@ -667,8 +677,8 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
         errors.append(
             ValidationError(
                 ac_line,
-                "ch6-ac-id-missing",
-                f"Ch.6 ### 인수조건 needs ≥{MIN_AC_TABLE_ROWS} AC IDs (AC-1, AC-2, …)",
+                "ch7-ac-id-missing",
+                f"Ch.7 ### Acceptance Criteria needs ≥{MIN_AC_TABLE_ROWS} AC IDs (AC-1, AC-2, …)",
             )
         )
     verifiable_rows = sum(1 for line in ac_sec.splitlines() if VERIFIABLE_AC.search(line))
@@ -676,19 +686,19 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
         errors.append(
             ValidationError(
                 ac_line,
-                "ch6-ac-not-verifiable",
+                "ch7-ac-not-verifiable",
                 "Ch.6 ### 인수조건 rows need verifiable conditions (Given/When/Then or measurable pass/fail)",
             )
         )
 
-    test_line, test_sec = _subsection_content(ch6, r"###\s+테스트")
+    test_line, test_sec = _subsection_content(ch7, r"###\s+(?:Tests|테스트)")
     test_rows = _count_table_data_rows(test_sec)
     if test_rows < MIN_TEST_TABLE_ROWS:
         errors.append(
             ValidationError(
                 test_line,
-                "ch6-test-thin",
-                f"Ch.6 ### 테스트 needs test table with ≥{MIN_TEST_TABLE_ROWS} data rows",
+                "ch7-test-thin",
+                f"Ch.7 ### Tests needs test table with ≥{MIN_TEST_TABLE_ROWS} data rows",
             )
         )
     test_ids = set(TEST_ID.findall(test_sec))
@@ -696,8 +706,8 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
         errors.append(
             ValidationError(
                 test_line,
-                "ch6-test-id-missing",
-                f"Ch.6 ### 테스트 needs ≥{MIN_TEST_TABLE_ROWS} Test IDs (T-1, T-2, …)",
+                "ch7-test-id-missing",
+                f"Ch.7 ### Tests needs ≥{MIN_TEST_TABLE_ROWS} Test IDs (T-1, T-2, …)",
             )
         )
     test_ac_refs = set(AC_ID.findall(test_sec))
@@ -707,7 +717,7 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     test_line,
-                    "ch6-test-ac-orphan",
+                    "ch7-test-ac-orphan",
                     f"Test table references unknown AC IDs: {', '.join(sorted(orphan_refs))}",
                 )
             )
@@ -716,7 +726,7 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     test_line,
-                    "ch6-ac-untested",
+                    "ch7-ac-untested",
                     f"Each AC needs ≥1 test row; missing tests for: {', '.join(sorted(uncovered))}",
                 )
             )
@@ -725,7 +735,7 @@ def check_design_depth(body: str, mode: str) -> list[ValidationError]:
         errors.append(
             ValidationError(
                 test_line,
-                "ch6-test-layer-missing",
+                "ch7-test-layer-missing",
                 "Ch.6 ### 테스트 rows must specify layer (unit / integration / e2e)",
             )
         )
@@ -761,52 +771,43 @@ def _table_data_rows(section: str) -> int:
 
 
 def check_requirements_analysis(body: str, mode: str) -> list[ValidationError]:
-    """Ch.2 ### 요구사항 분석 — FR inventory + RTM before design chapters."""
+    """Ch.3 Requirements — FR inventory + RTM before design chapters."""
     errors: list[ValidationError] = []
-    ch2 = _chapter_slice(body, r"^##\s+2\.\s+", r"^##\s+3\.\s+")
-    if not ch2:
+    ch3 = _chapter_slice(body, r"^##\s+3\.\s+Requirements", r"^##\s+4\.\s+")
+    if not ch3:
         return errors
 
-    req_m = CH2_REQ_SUBSECTION.search(ch2)
-    if not req_m:
-        errors.append(
-            ValidationError(
-                0,
-                "ch2-req-analysis-missing",
-                "Ch.2 missing required ### 요구사항 분석",
-            )
-        )
-        return errors
-
-    req_sec = ch2[req_m.start() :]
+    req_m = CH3_REQ_OPTIONAL.search(ch3)
+    req_sec = ch3[req_m.start() :] if req_m else ch3
+    req_anchor = req_m.start() if req_m else 0
     lead = _lead_prose_lines(req_sec)
     if len(lead.strip()) < MIN_REQ_ANALYSIS_LEAD_CHARS:
         errors.append(
             ValidationError(
-                req_m.start(),
-                "ch2-req-analysis-lead-thin",
-                f"### 요구사항 분석 needs ≥{MIN_REQ_ANALYSIS_LEAD_CHARS} chars lead prose before tables",
+                req_anchor,
+                "ch3-req-lead-thin",
+                f"Ch.3 Requirements needs ≥{MIN_REQ_ANALYSIS_LEAD_CHARS} chars lead prose before tables",
             )
         )
 
-    fr_m = CH2_FR_HEADING.search(req_sec)
+    fr_m = CH3_FR_HEADING.search(req_sec)
     if not fr_m:
         errors.append(
             ValidationError(
-                req_m.start(),
-                "ch2-fr-heading-missing",
-                "Ch.2 ### 요구사항 분석 missing #### 기능 요구 (FR)",
+                req_anchor,
+                "ch3-fr-heading-missing",
+                "Ch.3 Requirements missing #### Functional Requirements (FR)",
             )
         )
     else:
-        fr_block = _slice_h4_block(req_sec, CH2_FR_HEADING)
+        fr_block = _slice_h4_block(req_sec, CH3_FR_HEADING)
         fr_rows = _table_data_rows(fr_block)
         fr_ids = len(set(FR_ID.findall(fr_block)))
         if fr_rows < MIN_FR_TABLE_ROWS:
             errors.append(
                 ValidationError(
                     fr_m.start(),
-                    "ch2-fr-table-thin",
+                    "ch3-fr-table-thin",
                     f"#### 기능 요구 (FR) needs ≥{MIN_FR_TABLE_ROWS} data rows (found {fr_rows})",
                 )
             )
@@ -814,7 +815,7 @@ def check_requirements_analysis(body: str, mode: str) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     fr_m.start(),
-                    "ch2-fr-id-missing",
+                    "ch3-fr-id-missing",
                     f"FR table needs ≥{MIN_FR_TABLE_ROWS} FR-n IDs (found {fr_ids})",
                 )
             )
@@ -822,7 +823,7 @@ def check_requirements_analysis(body: str, mode: str) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     fr_m.start(),
-                    "ch2-fr-prd-anchor-missing",
+                    "ch3-fr-prd-anchor-missing",
                     "FR table needs at least one [source:prd#…] anchor",
                 )
             )
@@ -830,28 +831,28 @@ def check_requirements_analysis(body: str, mode: str) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     fr_m.start(),
-                    "ch2-fr-impl-status-missing",
+                    "ch3-fr-impl-status-missing",
                     "Brownfield FR table needs 구현 상태 column",
                 )
             )
 
-    rtm_m = CH2_RTM_HEADING.search(req_sec)
+    rtm_m = CH3_RTM_HEADING.search(req_sec)
     if not rtm_m:
         errors.append(
             ValidationError(
-                req_m.start(),
-                "ch2-rtm-heading-missing",
-                "Ch.2 ### 요구사항 분석 missing #### 추적성 매트릭스 (RTM)",
+                req_anchor,
+                "ch3-rtm-heading-missing",
+                "Ch.3 Requirements missing #### Traceability Matrix (RTM)",
             )
         )
     else:
-        rtm_block = _slice_h4_block(req_sec, CH2_RTM_HEADING)
+        rtm_block = _slice_h4_block(req_sec, CH3_RTM_HEADING)
         rtm_rows = _table_data_rows(rtm_block)
         if rtm_rows < MIN_RTM_TABLE_ROWS:
             errors.append(
                 ValidationError(
                     rtm_m.start(),
-                    "ch2-rtm-table-thin",
+                    "ch3-rtm-table-thin",
                     f"#### 추적성 매트릭스 (RTM) needs ≥{MIN_RTM_TABLE_ROWS} data rows (found {rtm_rows})",
                 )
             )
@@ -860,7 +861,7 @@ def check_requirements_analysis(body: str, mode: str) -> list[ValidationError]:
             errors.append(
                 ValidationError(
                     rtm_m.start(),
-                    "ch2-rtm-req-id-missing",
+                    "ch3-rtm-req-id-missing",
                     f"RTM needs ≥{MIN_RTM_TABLE_ROWS} REQ IDs (FR/NFR/…, found {req_refs})",
                 )
             )
@@ -910,23 +911,20 @@ def _rtm_fr_ac_map(rtm_block: str) -> dict[str, set[str]]:
 
 
 def check_requirement_traceability(body: str, mode: str) -> list[ValidationError]:
-    """Must FR → RTM → Ch.6 AC; Ch.2 OQ-* → Ch.7 열린 질문."""
+    """Must FR → RTM → Ch.7 AC; Ch.3 OQ-* → Ch.8 Open Questions."""
     errors: list[ValidationError] = []
-    ch2 = _chapter_slice(body, r"^##\s+2\.\s+", r"^##\s+3\.\s+")
-    ch6 = _chapter_slice(body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
-    ch7 = _chapter_slice(body, r"^##\s+7\.\s+마무리", None)
-    if not ch2:
+    ch3 = _chapter_slice(body, r"^##\s+3\.\s+Requirements", r"^##\s+4\.\s+")
+    ch7 = _chapter_slice(body, r"^##\s+7\.\s+", r"^##\s+8\.\s+")
+    ch8 = _chapter_slice(body, r"^##\s+8\.\s+", None)
+    if not ch3:
         return errors
 
-    req_m = CH2_REQ_SUBSECTION.search(ch2)
-    if not req_m:
-        return errors
-
-    req_sec = ch2[req_m.start() :]
-    fr_m = CH2_FR_HEADING.search(req_sec)
-    rtm_m = CH2_RTM_HEADING.search(req_sec)
-    fr_block = _slice_h4_block(req_sec, CH2_FR_HEADING) if fr_m else ""
-    rtm_block = _slice_h4_block(req_sec, CH2_RTM_HEADING) if rtm_m else ""
+    req_m = CH3_REQ_OPTIONAL.search(ch3)
+    req_sec = ch3[req_m.start() :] if req_m else ch3
+    fr_m = CH3_FR_HEADING.search(req_sec)
+    rtm_m = CH3_RTM_HEADING.search(req_sec)
+    fr_block = _slice_h4_block(req_sec, CH3_FR_HEADING) if fr_m else ""
+    rtm_block = _slice_h4_block(req_sec, CH3_RTM_HEADING) if rtm_m else ""
 
     must_frs = _fr_must_ids(fr_block)
     if not must_frs:
@@ -935,7 +933,7 @@ def check_requirement_traceability(body: str, mode: str) -> list[ValidationError
     rtm_map = _rtm_fr_ac_map(rtm_block)
     rtm_frs = set(rtm_map.keys())
 
-    ac_line, ac_sec = _subsection_content(ch6, r"###\s+인수\s*조건") if ch6 else (0, "")
+    ac_line, ac_sec = _subsection_content(ch7, r"###\s+(?:Acceptance\s+Criteria|인수\s*조건)") if ch7 else (0, "")
     ac_ids = {a.upper() for a in AC_ID.findall(ac_sec)} if ac_sec else set()
     ac_fr_mentions = {f.upper() for f in FR_ID.findall(ac_sec)} if ac_sec else set()
 
@@ -962,7 +960,7 @@ def check_requirement_traceability(body: str, mode: str) -> list[ValidationError
                     ac_line or anchor_line,
                     "must-fr-ac-rtm-drift",
                     f"Must {fr_id} RTM maps to {', '.join(sorted(ac_from_rtm))} "
-                    f"but those AC IDs are missing from Ch.6 ### 인수조건",
+                    f"but those AC IDs are missing from Ch.7 ### Acceptance Criteria",
                 )
             )
         else:
@@ -970,23 +968,23 @@ def check_requirement_traceability(body: str, mode: str) -> list[ValidationError
                 ValidationError(
                     ac_line or anchor_line,
                     "must-fr-ac-missing",
-                    f"Must {fr_id} needs ≥1 AC-* in RTM (not TBD/예정) and referenced in Ch.6 ### 인수조건",
+                    f"Must {fr_id} needs ≥1 AC-* in RTM (not TBD/예정) and referenced in Ch.7 ### Acceptance Criteria",
                 )
             )
 
-    if CH2_OQ_HEADING.search(req_sec):
-        oq_block = _slice_h4_block(req_sec, CH2_OQ_HEADING)
+    if CH3_OQ_HEADING.search(req_sec):
+        oq_block = _slice_h4_block(req_sec, CH3_OQ_HEADING)
         oq_ids = {o.upper() for o in OQ_ID.findall(oq_block)}
         if oq_ids:
-            if not ch7:
+            if not ch8:
                 errors.append(
-                    ValidationError(0, "oq-ch7-missing", "Ch.2 defines OQ-* but Ch.7 is missing")
+                    ValidationError(0, "oq-ch8-missing", "Ch.3 defines OQ-* but Ch.8 is missing")
                 )
             else:
-                oq_line, oq_sec = _subsection_content(ch7, r"###\s+열린\s+질문")
+                oq_line, oq_sec = _subsection_content(ch8, r"###\s+(?:Open\s+Questions|열린\s+질문)")
                 if not oq_sec:
                     errors.append(
-                        ValidationError(0, "ch7-open-questions", "Ch.7 missing ### 열린 질문 for OQ-*")
+                        ValidationError(0, "ch8-open-questions", "Ch.8 missing ### Open Questions for OQ-*")
                     )
                 else:
                     oq_upper = oq_sec.upper()
@@ -995,8 +993,8 @@ def check_requirement_traceability(body: str, mode: str) -> list[ValidationError
                             errors.append(
                                 ValidationError(
                                     oq_line,
-                                    "oq-ch7-missing",
-                                    f"{oq_id} from Ch.2 #### 모호·충돌·미결 must appear in Ch.7 ### 열린 질문",
+                                    "oq-ch8-missing",
+                                    f"{oq_id} from Ch.3 #### 모호·충돌·미결 must appear in Ch.8 ### Open Questions",
                                 )
                             )
 
@@ -1005,42 +1003,42 @@ def check_requirement_traceability(body: str, mode: str) -> list[ValidationError
 
 def check_design_subsections(body: str) -> list[ValidationError]:
     errors: list[ValidationError] = []
-    ch5 = _chapter_slice(body, r"^##\s+5\.\s+상위설계", r"^##\s+6\.\s+")
-    ch6 = _chapter_slice(body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
-    ch7 = _chapter_slice(body, r"^##\s+7\.\s+마무리", None)
+    ch5 = _chapter_slice(body, r"^##\s+5\.\s+", r"^##\s+6\.\s+")
+    ch7 = _chapter_slice(body, r"^##\s+7\.\s+", r"^##\s+8\.\s+")
+    ch8 = _chapter_slice(body, r"^##\s+8\.\s+", None)
 
-    for pattern in CH5_SUBSECTIONS:
+    for pattern in CH5_PROPOSED_SUBSECTIONS:
         if ch5 and not re.search(pattern, ch5):
             errors.append(
                 ValidationError(0, "ch5-subsection-missing", f"Ch.5 missing required subsection: /{pattern}/")
             )
-    for pattern in CH6_SUBSECTIONS:
-        if ch6 and not re.search(pattern, ch6):
+    for pattern in CH7_DETAIL_SUBSECTIONS:
+        if ch7 and not re.search(pattern, ch7):
             errors.append(
-                ValidationError(0, "ch6-subsection-missing", f"Ch.6 missing required subsection: /{pattern}/")
+                ValidationError(0, "ch7-subsection-missing", f"Ch.7 missing required subsection: /{pattern}/")
             )
 
-    if ch7:
-        if not re.search(r"###\s+열린\s+질문", ch7):
-            errors.append(ValidationError(0, "ch7-open-questions", "Ch.7 missing ### 열린 질문"))
-        if not (re.search(r"###\s+롤아웃·일정", ch7) or re.search(r"###\s+롤아웃\s+및\s+일정", ch7)):
-            errors.append(ValidationError(0, "ch7-rollout", "Ch.7 missing ### 롤아웃·일정"))
-        if not re.search(r"###\s+리스크", ch7):
-            errors.append(ValidationError(0, "ch7-risks", "Ch.7 missing ### 리스크"))
+    if ch8:
+        if not re.search(r"###\s+(?:Open\s+Questions|열린\s+질문)", ch8):
+            errors.append(ValidationError(0, "ch8-open-questions", "Ch.8 missing ### Open Questions"))
+        if not (re.search(r"###\s+(?:Rollout\s+and\s+Milestones|롤아웃)", ch8)):
+            errors.append(ValidationError(0, "ch8-rollout", "Ch.8 missing ### Rollout and Milestones"))
+        if not re.search(r"###\s+(?:Risks|리스크)", ch8):
+            errors.append(ValidationError(0, "ch8-risks", "Ch.8 missing ### Risks"))
     return errors
 
 
-def check_ch4_ch6_sources(body: str) -> list[ValidationError]:
-    """Ch.4 should contain Tier-1 decision cards or legacy source blocks when it has substance."""
+def check_ch6_alternatives_sources(body: str) -> list[ValidationError]:
+    """Ch.6 Alternatives should contain Tier-1 decision cards or legacy source blocks when it has substance."""
     errors: list[ValidationError] = []
-    ch4 = _ch4_slice(body)
+    ch6 = _ch6_alternatives_slice(body)
 
-    if len(ch4.strip()) >= 80 and not _ch4_has_tier1_markers(ch4):
+    if len(ch6.strip()) >= 80 and not _ch6_has_tier1_markers(ch6):
         errors.append(
             ValidationError(
                 0,
                 "source-block-missing",
-                "Ch.4 has content but no decision cards (| 결정 | / | 갈림 |) or legacy > **결정:** blocks",
+                "Ch.6 has content but no decision cards (| 결정 | / | 갈림 |) or legacy > **결정:** blocks",
             )
         )
     return errors
@@ -1111,16 +1109,16 @@ def check_pending_open_questions(body: str) -> list[ValidationError]:
     errors: list[ValidationError] = []
     if "권장(미확정)" not in body:
         return errors
-    ch7_match = re.search(r"^##\s+7\.\s+마무리", body, flags=re.M)
-    if not ch7_match:
+    ch8_match = re.search(r"^##\s+8\.\s+", body, flags=re.M)
+    if not ch8_match:
         return errors
-    ch7 = body[ch7_match.start() :]
-    if "열린 질문" not in ch7 and "최종 선택" not in ch7:
+    ch8 = body[ch8_match.start() :]
+    if "열린 질문" not in ch8 and "Open Questions" not in ch8 and "최종 선택" not in ch8:
         errors.append(
             ValidationError(
                 0,
                 "pending-fork-no-open-question",
-                "Ch.4 has 권장(미확정) but Ch.7 lacks 열린 질문 / 최종 선택 item",
+                "Ch.6 has 권장(미확정) but Ch.8 lacks 열린 질문 / 최종 선택 item",
             )
         )
     return errors
@@ -1153,22 +1151,26 @@ def check_tier1_decisions(body: str, mode: str) -> list[ValidationError]:
     return errors
 
 
-def _ch4_slice(body: str) -> str:
-    return _chapter_slice(body, r"^##\s+4\.\s+", r"^##\s+5\.\s+")
+def _ch5_proposed_slice(body: str) -> str:
+    return _chapter_slice(body, r"^##\s+5\.\s+", r"^##\s+6\.\s+")
 
 
-def _iter_ch4_decision_sections(ch4: str) -> list[tuple[int, str, str]]:
-    """Return (line_num, title, content) for each ### in Ch.4 except 결정 요약."""
+def _ch6_alternatives_slice(body: str) -> str:
+    return _chapter_slice(body, r"^##\s+6\.\s+", r"^##\s+7\.\s+")
+
+
+def _iter_ch6_decision_sections(ch6: str) -> list[tuple[int, str, str]]:
+    """Return (line_num, title, content) for each ### in Ch.6 except Decision Summary."""
     results: list[tuple[int, str, str]] = []
-    for match in re.finditer(r"^###\s+(.+)$", ch4, re.M):
+    for match in re.finditer(r"^###\s+(.+)$", ch6, re.M):
         title = match.group(1).strip()
-        if re.match(r"결정\s+요약", title):
+        if re.match(r"(?:Decision\s+Summary|결정\s+요약)", title, re.I):
             continue
-        line_num = ch4[: match.start()].count("\n") + 1
+        line_num = ch6[: match.start()].count("\n") + 1
         start = match.end()
-        next_header = re.search(r"^###\s+|^##\s+", ch4[start:], re.M)
-        end = start + next_header.start() if next_header else len(ch4)
-        results.append((line_num, title, ch4[start:end]))
+        next_header = re.search(r"^###\s+|^##\s+", ch6[start:], re.M)
+        end = start + next_header.start() if next_header else len(ch6)
+        results.append((line_num, title, ch6[start:end]))
     return results
 
 
@@ -1181,20 +1183,20 @@ def _prose_after_label(section: str, label: re.Pattern[str]) -> str:
     return (rest[: stop.start()] if stop else rest).strip()
 
 
-def _ch4_has_tier1_markers(ch4: str) -> bool:
-    if re.search(r"^\s*>\s*\*\*(결정|갈림):\*\*", ch4, re.M):
+def _ch6_has_tier1_markers(ch6: str) -> bool:
+    if re.search(r"^\s*>\s*\*\*(결정|갈림):\*\*", ch6, re.M):
         return True
-    return bool(DECISION_CARD_META.search(ch4) or FORK_CARD_META.search(ch4))
+    return bool(DECISION_CARD_META.search(ch6) or FORK_CARD_META.search(ch6))
 
 
-def check_ch4_decision_cards(body: str, mode: str) -> list[ValidationError]:
-    """Validate readable decision cards in Ch.4 (metadata table + prose rationale)."""
+def check_ch6_decision_cards(body: str, mode: str) -> list[ValidationError]:
+    """Validate readable decision cards in Ch.6 (metadata table + prose rationale)."""
     errors: list[ValidationError] = []
-    ch4 = _ch4_slice(body)
-    if not ch4.strip():
+    ch6 = _ch6_alternatives_slice(body)
+    if not ch6.strip():
         return errors
 
-    for line_num, _title, content in _iter_ch4_decision_sections(ch4):
+    for line_num, _title, content in _iter_ch6_decision_sections(ch6):
         is_fork = bool(FORK_CARD_META.search(content))
         is_decision = bool(DECISION_CARD_META.search(content))
         if not is_fork and not is_decision:
@@ -1310,14 +1312,14 @@ def _appendix_slice(body: str, header_pattern: re.Pattern[str]) -> str:
     return body[begin:]
 
 
-def _appendix_citation_checks(body: str, ch4: str, ch5: str, ch6: str) -> list[ValidationError]:
+def _appendix_citation_checks(body: str, ch5: str, ch6: str, ch7: str) -> list[ValidationError]:
     errors: list[ValidationError] = []
-    for label, chunk in (("5", ch5), ("6", ch6)):
+    for label, chunk in (("6", ch6), ("7", ch7)):
         if chunk and SASIL_BLOCK.search(chunk):
             errors.append(
                 ValidationError(
                     0,
-                    "ch56-sasil-forbidden",
+                    "ch67-sasil-forbidden",
                     f"Ch.{label} must not use > **사실:** blockquotes; use [ref:A-n] + Appendix A",
                 )
             )
@@ -1338,36 +1340,37 @@ def _appendix_citation_checks(body: str, ch4: str, ch5: str, ch6: str) -> list[V
                     )
                 )
 
-    ch4_has_tier1 = _ch4_has_tier1_markers(ch4) if ch4 else False
-    if ch4_has_tier1 and not APPENDIX_B_HEADER.search(body):
+    ch6_has_tier1 = _ch6_has_tier1_markers(ch6) if ch6 else False
+    if ch6_has_tier1 and not APPENDIX_B_HEADER.search(body):
         errors.append(
-            ValidationError(0, "appendix-b-missing", "Ch.4 has decision cards but ## 부록 B is missing")
+            ValidationError(0, "appendix-b-missing", "Ch.6 has decision cards but ## 부록 B is missing")
         )
     return errors
 
 
 def check_narrative(body: str) -> list[ValidationError]:
-    """Narrative profile: story prose, bridges, anti-labels, appendices."""
+    """Narrative profile: story prose, bridges, anti-labels, appendices (8-chapter Design Doc)."""
     errors: list[ValidationError] = []
 
-    ch1 = _chapter_slice(body, r"^##\s+1\.\s+서문", r"^##\s+2\.\s+")
-    ch2 = _chapter_slice(body, r"^##\s+2\.\s+", r"^##\s+3\.\s+")
-    ch3 = _chapter_slice(body, r"^##\s+3\.\s+", r"^##\s+4\.\s+")
+    ch1 = _chapter_slice(body, r"^##\s+1\.\s+Overview", r"^##\s+2\.\s+")
+    ch2 = _chapter_slice(body, r"^##\s+2\.\s+Background", r"^##\s+3\.\s+")
+    ch3 = _chapter_slice(body, r"^##\s+3\.\s+Requirements", r"^##\s+4\.\s+")
     ch4 = _chapter_slice(body, r"^##\s+4\.\s+", r"^##\s+5\.\s+")
-    ch5 = _chapter_slice(body, r"^##\s+5\.\s+상위설계", r"^##\s+6\.\s+")
-    ch6 = _chapter_slice(body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
-    ch234567 = _body_before_appendices(body)
-    bridge_body = ch234567
+    ch5 = _chapter_slice(body, r"^##\s+5\.\s+", r"^##\s+6\.\s+")
+    ch6 = _chapter_slice(body, r"^##\s+6\.\s+", r"^##\s+7\.\s+")
+    ch7 = _chapter_slice(body, r"^##\s+7\.\s+", r"^##\s+8\.\s+")
+    bridge_body = _body_before_appendices(body)
     for code, pattern in FORBIDDEN_META_PATTERNS:
         if pattern.search(bridge_body):
             errors.append(
-                ValidationError(0, code, f"Forbidden meta-label in Ch.2–7: {code}")
+                ValidationError(0, code, f"Forbidden meta-label in Ch.2–8: {code}")
             )
 
     for num, chapter, code in (
         (2, ch2, "ch2-min-sentences"),
         (3, ch3, "ch3-min-sentences"),
         (4, ch4, "ch4-min-sentences"),
+        (5, ch5, "ch5-min-sentences"),
     ):
         count = _count_sentences(chapter)
         if chapter and count < MIN_CH234_SENTENCES:
@@ -1381,45 +1384,47 @@ def check_narrative(body: str) -> list[ValidationError]:
 
     for num, chapter in ((2, ch2), (3, ch3)):
         errors.extend(_check_ch234_paragraphs(chapter, num))
-    if ch4:
-        errors.extend(_check_ch234_paragraphs(_ch4_before_summary(ch4), 4))
+    if ch5:
+        errors.extend(_check_ch234_paragraphs(_ch5_before_architecture(ch5), 5))
+    if ch6:
+        errors.extend(_check_ch234_paragraphs(_ch6_before_summary(ch6), 6))
 
-    if ch2 and ch3 and not _chapter_bridge_ok(ch2, ch3):
-        errors.append(ValidationError(0, "ch-bridge-2-3", "Weak narrative bridge between Ch.2 and Ch.3"))
-    if ch3 and ch4 and not _chapter_bridge_ok(ch3, ch4):
-        errors.append(ValidationError(0, "ch-bridge-3-4", "Weak narrative bridge between Ch.3 and Ch.4"))
-    if ch4 and ch5 and not _chapter_bridge_ok(ch4, ch5):
-        errors.append(ValidationError(0, "ch-bridge-4-5", "Weak narrative bridge between Ch.4 and Ch.5"))
+    bridges = (
+        (ch2, ch3, "ch-bridge-2-3", "Ch.2 and Ch.3"),
+        (ch3, ch4, "ch-bridge-3-4", "Ch.3 and Ch.4"),
+        (ch4, ch5, "ch-bridge-4-5", "Ch.4 and Ch.5"),
+        (ch5, ch6, "ch-bridge-5-6", "Ch.5 and Ch.6"),
+        (ch6, ch7, "ch-bridge-6-7", "Ch.6 and Ch.7"),
+    )
+    for prev_ch, next_ch, code, label in bridges:
+        if prev_ch and next_ch and not _chapter_bridge_ok(prev_ch, next_ch):
+            errors.append(ValidationError(0, code, f"Weak narrative bridge between {label}"))
 
-    if ch4:
-        ch4_prose = _ch4_before_summary(ch4)
-        if ch4_prose and not MERMAID_FENCE.search(ch4_prose):
+    if ch5:
+        ch5_gap = _ch5_before_architecture(ch5)
+        if ch5_gap and not MERMAID_FENCE.search(ch5_gap):
             errors.append(
                 ValidationError(
                     0,
-                    "ch4-transition-diagram-missing",
-                    "Ch.4 needs ```mermaid transition diagram before ### 결정 요약",
+                    "ch5-transition-diagram-missing",
+                    "Ch.5 needs ```mermaid As-Is→To-Be transition diagram before ### Architecture Overview",
                 )
             )
-        if not CH4_SUMMARY.search(ch4):
-            errors.append(ValidationError(0, "ch4-summary-missing", "Ch.4 missing ### 결정 요약"))
-        else:
-            _, summary_sec = _subsection_content(ch4, r"###\s+결정\s+요약")
-            if _count_table_data_rows(summary_sec) < 1:
-                errors.append(
-                    ValidationError(0, "ch4-summary-empty", "### 결정 요약 needs ≥1 data row")
-                )
-
-    if ch5:
-        _, arch_sec = _subsection_content(ch5, r"###\s+아키텍처\s+개요")
+        _, arch_sec = _subsection_content(
+            ch5, r"###\s+(?:Architecture\s+Overview|아키텍처\s+개요)"
+        )
         if arch_sec and not MERMAID_FENCE.search(arch_sec):
             errors.append(
-                ValidationError(0, "ch5-mermaid-missing", "Ch.5 ### 아키텍처 개요 needs ```mermaid diagram")
+                ValidationError(
+                    0,
+                    "ch5-mermaid-missing",
+                    "Ch.5 ### Architecture Overview needs ```mermaid diagram",
+                )
             )
         for pattern, label, min_lead in (
-            (r"###\s+아키텍처\s+개요", "아키텍처 개요", MIN_CH5_LEAD_SENTENCES),
-            (r"###\s+구성요소\s+및\s+책임", "구성요소 및 책임", MIN_CH5_LEAD_SENTENCES),
-            (r"###\s+데이터\s+흐름", "데이터 흐름", MIN_CH5_LEAD_SENTENCES),
+            (r"###\s+(?:Architecture\s+Overview|아키텍처\s+개요)", "Architecture Overview", MIN_CH5_LEAD_SENTENCES),
+            (r"###\s+(?:Components\s+and\s+Responsibilities|구성요소\s+및\s+책임)", "Components", MIN_CH5_LEAD_SENTENCES),
+            (r"###\s+(?:Data\s+Flow|데이터\s+흐름)", "Data Flow", MIN_CH5_LEAD_SENTENCES),
         ):
             line_num, content = _subsection_content(ch5, pattern)
             if not content:
@@ -1433,25 +1438,39 @@ def check_narrative(body: str) -> list[ValidationError]:
                         f"Ch.5 ### {label} needs ≥{min_lead} lead sentences before structure (found {lead_count})",
                     )
                 )
-        _, flow_sec = _subsection_content(ch5, r"###\s+데이터\s+흐름")
+        _, flow_sec = _subsection_content(ch5, r"###\s+(?:Data\s+Flow|데이터\s+흐름)")
         if flow_sec and not MERMAID_FENCE.search(flow_sec):
             errors.append(
                 ValidationError(
                     0,
                     "ch5-flow-diagram-missing",
-                    "Ch.5 ### 데이터 흐름 needs ```mermaid sequence or flow diagram",
+                    "Ch.5 ### Data Flow needs ```mermaid sequence or flow diagram",
                 )
             )
 
     if ch6:
+        if not CH6_DECISION_SUMMARY.search(ch6):
+            errors.append(
+                ValidationError(0, "ch6-summary-missing", "Ch.6 missing ### Decision Summary")
+            )
+        else:
+            _, summary_sec = _subsection_content(
+                ch6, r"###\s+(?:Decision\s+Summary|결정\s+요약)"
+            )
+            if _count_table_data_rows(summary_sec) < 1:
+                errors.append(
+                    ValidationError(0, "ch6-summary-empty", "### Decision Summary needs ≥1 data row")
+                )
+
+    if ch7:
         for pattern, label in (
-            (r"###\s+API\s+및\s+인터페이스", "API 및 인터페이스"),
-            (r"###\s+데이터\s+모델", "데이터 모델"),
-            (r"###\s+핵심\s+처리\s+흐름", "핵심 처리 흐름"),
-            (r"###\s+인수\s*조건", "인수조건"),
-            (r"###\s+테스트", "테스트"),
+            (r"###\s+(?:APIs\s+and\s+Interfaces|API\s+및\s+인터페이스)", "APIs"),
+            (r"###\s+(?:Data\s+Model|데이터\s+모델)", "Data Model"),
+            (r"###\s+(?:Core\s+Processing\s+Flow|핵심\s+처리\s+흐름)", "Core Flow"),
+            (r"###\s+(?:Acceptance\s+Criteria|인수\s*조건)", "Acceptance Criteria"),
+            (r"###\s+(?:Tests|테스트)", "Tests"),
         ):
-            line_num, content = _subsection_content(ch6, pattern)
+            line_num, content = _subsection_content(ch7, pattern)
             if not content:
                 continue
             lead_count = _count_sentences(_lead_prose_lines(content))
@@ -1459,18 +1478,20 @@ def check_narrative(body: str) -> list[ValidationError]:
                 errors.append(
                     ValidationError(
                         line_num,
-                        "ch6-lead-prose-thin",
-                        f"Ch.6 ### {label} needs ≥{MIN_CH6_LEAD_SENTENCES} lead sentence before tables (found {lead_count})",
+                        "ch7-lead-prose-thin",
+                        f"Ch.7 ### {label} needs ≥{MIN_CH6_LEAD_SENTENCES} lead sentence before tables (found {lead_count})",
                     )
                 )
-        _, proc_sec = _subsection_content(ch6, r"###\s+핵심\s+처리\s+흐름")
+        _, proc_sec = _subsection_content(
+            ch7, r"###\s+(?:Core\s+Processing\s+Flow|핵심\s+처리\s+흐름)"
+        )
         if proc_sec:
             if not MERMAID_FENCE.search(proc_sec):
                 errors.append(
                     ValidationError(
                         0,
-                        "ch6-flow-diagram-missing",
-                        "Ch.6 ### 핵심 처리 흐름 needs ```mermaid flow diagram",
+                        "ch7-flow-diagram-missing",
+                        "Ch.7 ### Core Processing Flow needs ```mermaid flow diagram",
                     )
                 )
             else:
@@ -1479,8 +1500,8 @@ def check_narrative(body: str) -> list[ValidationError]:
                         errors.append(
                             ValidationError(
                                 0,
-                                "ch6-flow-branches-weak",
-                                "Ch.6 flow mermaid needs ≥2 branch signals (decision edges, |yes|/|no|, or alt/else)",
+                                "ch7-flow-branches-weak",
+                                "Ch.7 flow mermaid needs ≥2 branch signals (decision edges, |yes|/|no|, or alt/else)",
                             )
                         )
                         break
@@ -1495,7 +1516,7 @@ def check_narrative(body: str) -> list[ValidationError]:
             )
         )
 
-    errors.extend(_appendix_citation_checks(body, ch4, ch5, ch6))
+    errors.extend(_appendix_citation_checks(body, ch5, ch6, ch7))
     return errors
 
 
@@ -1518,8 +1539,8 @@ def validate(path: Path, *, strict: bool = True, narrative: bool = False, readab
     errors.extend(check_requirements_analysis(body, mode))
     errors.extend(check_requirement_traceability(body, mode))
     errors.extend(check_design_subsections(body))
-    errors.extend(check_ch4_ch6_sources(body))
-    errors.extend(check_ch4_decision_cards(body, mode))
+    errors.extend(check_ch6_alternatives_sources(body))
+    errors.extend(check_ch6_decision_cards(body, mode))
     errors.extend(check_fork_blocks(body, mode))
     errors.extend(check_tier1_decisions(body, mode))
     errors.extend(check_pending_open_questions(body))

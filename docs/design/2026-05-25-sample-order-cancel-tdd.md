@@ -12,26 +12,40 @@ review_rounds: 0
 
 ## 목차
 
-1. [서문](#1-서문)
-2. [배경과 문제](#2-배경과-문제)
-3. [현재 시스템](#3-현재-시스템)
-4. [갭과 설계 전환](#4-갭과-설계-전환)
-5. [상위설계](#5-상위설계)
-6. [상세설계](#6-상세설계)
-7. [마무리](#7-마무리)
+1. [Overview](#1-overview)
+2. [Background](#2-background)
+3. [Requirements](#3-requirements)
+4. [Existing Solution](#4-existing-solution)
+5. [Proposed Solution](#5-proposed-solution)
+6. [Alternatives Considered](#6-alternatives-considered)
+7. [Detailed Design](#7-detailed-design)
+8. [Rollout and Open Items](#8-rollout-and-open-items)
 - [부록 A. 출처·코드 위치](#부록-a-출처코드-위치)
-- [부록 B. Ch.4 결정 전문](#부록-b-ch4-결정-전문)
+- [부록 B. Ch.6 결정 전문](#부록-b-ch6-결정-전문)
 
-## 이 문서 읽는 법
+
+## How to Read This Doc
+
+### 설계 계층 (필독)
+
+| 계층 | 장 | 내용 |
+|------|-----|------|
+| 요구 | Ch.3 [Requirements](#3-requirements) | FR/RTM |
+| 현황 | Ch.4 [Existing Solution](#4-existing-solution) | As-Is |
+| 개념설계 | Ch.5 [Proposed Solution](#5-proposed-solution) | HLD·갭·전환 mermaid |
+| 설계 결정 | Ch.6 [Alternatives Considered](#6-alternatives-considered) | ADR·Tier-1 |
+| 상세 | Ch.7 [Detailed Design](#7-detailed-design) | API·AC·테스트 |
+
+본문 순서는 Ch.6(Proposed)→Ch.7(Alternatives)→Ch.8(Detailed).
 
 | 독자 | 먼저 볼 곳 | 목표 |
 |------|-----------|------|
-| PM | ## 1. 서문 opening + Goals → [요구사항 분석](#요구사항-분석) → [§5](#5-상위설계) diagram | \~3분 |
-| Dev | [요구사항 분석](#요구사항-분석) → [§4](#4-갭과-설계-전환) → [§6](#6-상세설계) dev index + tables | \~5분 |
-| QA | [요구사항 분석](#요구사항-분석) RTM → [§6](#6-상세설계) [인수조건](#인수조건) → [테스트](#테스트) | \~3분 |
-| 감사 | [§4](#4-갭과-설계-전환) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | \~3분 |
+| PM | ## 1. Overview opening + Goals → [Requirements](#3-requirements) → [§7](#5-proposed-solution) diagram | \~3분 |
+| Dev (구현) | [§7](#5-proposed-solution) → [§7](#6-alternatives-considered) → [§7](#7-detailed-design) dev index + tables | \~5분 |
+| QA | [Requirements](#3-requirements) RTM → [§7](#7-detailed-design) [인수조건](#인수조건) → [테스트](#테스트) | \~3분 |
+| 감사 | [§7](#6-alternatives-considered) 결정 요약 → [부록 A](#부록-a-출처코드-위치) | \~3분 |
 
-## 1. 서문
+## 1. Overview
 
 이 문서는 B2C 웹 주문 API에 주문 취소 기능을 추가하기 위한 기술 설계서이다. PM, 백엔드 개발자, 감사 담당자가 동일한 사실을 공유하도록 PRD `docs/prd/order-cancel.md`를 2026-05-25 기준으로 반영한다. paid 상태 취소 시 Stripe 환불과 재고 복구가 함께 일어나야 하며, Idempotency-Key로 중복 취소를 안전하게 처리한다. Staging에서 1주 검증 후 feature flag `cancel_refund_enabled`로 production에 점진 롤아웃한다.
 
@@ -46,7 +60,7 @@ review_rounds: 0
 - partial refund 정책 (PRD 미정)
 - B2B·관리자 bulk cancel
 
-## 2. 배경과 문제
+## 2. Background
 
 B2C 웹 쇼핑몰 고객은 결제 완료 전·후 특정 조건에서 주문을 스스로 취소할 수 있어야 한다. PRD는 pending과 paid 상태에서 취소를 허용하며, 취소 시 line item 기준 재고 복구를 요구한다. paid 상태에서는 결제 금액 전액 환불이 선행되어야 하고, 환불 실패 시 주문 상태는 변경되지 않아야 한다. 범위는 B2C 웹 주문 API이며 B2B·관리자 bulk cancel은 이번 릴리스에서 제외한다 [ref:A-1].
 
@@ -54,16 +68,18 @@ B2C 웹 쇼핑몰 고객은 결제 완료 전·후 특정 조건에서 주문을
 
 이러한 요구는 OrderService와 PaymentGateway, InventoryService 간 orchestration을 필요로 한다.
 
-### 요구사항 분석
+## 3. Requirements
 
-PRD cancel-flow를 설계·검증 가능한 REQ-ID 목록으로 정리한다. 아래 FR은 Ch.6 인수조건의 상위 요구이며, RTM은 FR→AC→테스트 추적의 초안이다. 다음 장에서는 각 FR의 **구현 상태**를 코드 기준으로 대조한다.
+PRD cancel-flow를 설계·검증 가능한 REQ-ID 목록으로 정리한다. 아래 FR은 Ch.7 인수조건의 상위 요구이며, RTM은 FR→AC→테스트 추적의 초안이다. Must FR은 paid 취소 시 환불 선행, 재고 복구, Idempotency-Key 중복 방지를 포함한다. NFR은 JWT Bearer 인증과 integration 검증을 요구한다.
+
+PM 독자는 FR 표로 범위를, QA는 RTM으로 AC·테스트 매핑을 확인한다. 감사 독자는 PRD 앵커 열이 원문과 일치하는지 본다. 다음 장(Ch.4)에서는 각 FR의 **구현 상태**를 코드 기준으로 대조한다. OQ-1 partial refund는 Non-Goal로 Ch.8에 남긴다.
 
 #### 기능 요구 (FR)
 
 | FR ID | PRD | 요구 설명 (shall) | 우선순위 | 구현 상태 | 비고 |
 |-------|-----|-------------------|----------|-----------|------|
 | FR-1 | [source:prd#cancel-flow] | pending·paid 주문은 고객이 취소 API로 취소할 수 있어야 한다 | Must | 부분 | endpoint 존재 |
-| FR-2 | [source:prd#cancel-flow] | paid 취소 시 결제 금액 전액 환불이 선행되어야 한다 | Must | 미구현 | Ch.4 갭 |
+| FR-2 | [source:prd#cancel-flow] | paid 취소 시 결제 금액 전액 환불이 선행되어야 한다 | Must | 미구현 | Ch.6 갭 |
 | FR-3 | [source:prd#cancel-flow] | 취소 시 line item 기준 재고가 복구되어야 한다 | Must | 미구현 | release 미호출 |
 | FR-4 | [source:prd#idempotency] | 동일 Idempotency-Key 재시도 시 중복 환불이 발생하지 않아야 한다 | Must | 부분 | header 미전달 |
 
@@ -85,18 +101,18 @@ PRD cancel-flow를 설계·검증 가능한 REQ-ID 목록으로 정리한다. �
 
 | ID | 유형 | 설명 | 처리 |
 |----|------|------|------|
-| OQ-1 | 모호 | partial refund 정책 미정 | Non-Goal; Ch.7 |
+| OQ-1 | 모호 | partial refund 정책 미정 | Non-Goal; Ch.8 |
 
 #### 추적성 매트릭스 (RTM)
 
-| PRD 앵커 | REQ ID | (예정) AC ID | 설계 반영 (Ch.5–6) | 테스트 |
+| PRD 앵커 | REQ ID | (예정) AC ID | 설계 반영 (Ch.5–7) | 테스트 |
 |----------|--------|--------------|-------------------|--------|
 | [source:prd#cancel-flow] | FR-1 | AC-4 | POST cancel pending/paid, status=cancelled | T-4 |
 | [source:prd#cancel-flow] | FR-2 | AC-1 | PaymentGateway.refund paid 분기 | T-1 |
 | [source:prd#cancel-flow] | FR-3 | AC-2 | InventoryService.release | T-2 |
 | [source:prd#idempotency] | FR-4 | AC-3 | Idempotency-Key 전파·중복 방지 | T-3 |
 
-## 3. 현재 시스템
+## 4. Existing Solution
 
 현재 B2C 주문 API는 `POST /orders/{id}/cancel` endpoint를 제공한다. CancelHandler가 JWT 인증 후 OrderService.cancel에 위임한다. OrderService는 주문 status를 cancelled로 변경하고 cancelled_at을 기록한다. PaymentGateway 연동은 없으며 paid 주문 취소 시 Stripe 환불은 발생하지 않는다 [ref:A-2].
 
@@ -104,13 +120,13 @@ InventoryService.release 호출도 cancel path에 포함되어 있지 않아 재
 
 status enum은 pending, paid, shipped, delivered, cancelled 다섯 값으로 정의되어 있다 [ref:A-7]. PRD가 요구하는 paid 취소 시 환불·재고 복구 orchestration은 현재 미구현이다.
 
-## 4. 갭과 설계 전환
+## 5. Proposed Solution
 
 PRD는 paid 상태 취소 시 환불을 필수로 요구하지만, 현재 OrderService.cancel은 status 변경만 수행한다. 재고 복구와 Idempotency-Key 전파도 PRD cancel-flow와 일치하지 않는다. 따라서 PaymentGateway.refund 연동과 InventoryService.release 호출을 OrderService cancel orchestration에 추가해야 한다.
 
-Stripe refund API는 payment_intent_id 기준이며, timeout 시 retry queue에 job을 적재하는 패턴을 채택한다 [ref:A-3]. PG timeout 시 클라이언트는 동일 Idempotency-Key로 안전하게 재시도할 수 있어야 한다. InventoryService.release 실패 시에는 compensating refund 호출로 데이터 정합성을 반드시 유지한다.
+Stripe refund API는 payment_intent_id 기준이며, timeout 시 retry queue에 job을 적재하는 패턴을 전제로 한다 [ref:A-3]. PG timeout 시 클라이언트는 동일 Idempotency-Key로 안전하게 재시도할 수 있어야 한다. InventoryService.release 실패 시에는 compensating refund 호출로 데이터 정합성을 반드시 유지한다.
 
-brownfield 제약 하에 CancelHandler와 OrderService, InventoryService는 기존 모듈을 확장하고 PaymentGateway만 신규 추가한다. Ch.5 상위설계는 이 결정을 API → Service → External 3계층 구조로 구체화한다.
+brownfield 제약 하에 CancelHandler와 OrderService, InventoryService는 기존 모듈을 확장하고 PaymentGateway만 신규 추가한다. 아래 목표 아키텍처는 API → Service → External 3계층으로 그 갭을 닫는다.
 
 ```mermaid
 flowchart LR
@@ -118,22 +134,7 @@ flowchart LR
   Gap --> ToBe[Orchestrated refund cancel]
 ```
 
-### 결정 요약
-
-| # | 주제 | 선택 | 상태 | 상세 |
-|---|------|------|------|------|
-| 1 | 환불 연동 | PaymentGateway.refund | 확정 | 아래 **결정** block |
-
-> **결정:** 취소 API에 PaymentGateway.refund 호출을 추가한다.
-> **근거:** [source:stripe-refunds](https://stripe.com/docs/api/refunds)
-> **코드:** `src/orders/cancel_handler.ts:18`
-> **상태:** 확정
-
-## 5. 상위설계
-
-Ch.4 결정에 따라 PaymentGateway.refund 연동을 B2C 주문 취소 3계층 상위설계로 펼친다. 클라이언트 요청은 API layer에서 JWT 인증 후 Service layer로 전달되고, External layer에서 Stripe PG와 InventoryService 내부 API를 호출한다. paid 분기에서만 환불이 발생하며 pending 취소는 status 전이와 재고 복구만 수행한다.
-
-### 아키텍처 개요
+### Architecture Overview
 
 B2C 주문 취소는 CancelHandler → OrderService → PaymentGateway·InventoryService 3계층으로 처리한다. API layer는 HTTP 경계와 인증을 담당하고, Service layer는 상태 전이 orchestration을 수행한다. Data layer는 PostgreSQL orders 테이블에 최종 상태를 저장한다 [ref:A-3].
 
@@ -146,7 +147,7 @@ flowchart LR
   OrderService --> PostgreSQL[(orders)]
 ```
 
-### 구성요소 및 책임
+### Components and Responsibilities
 
 취소·환불·재고 복구는 CancelHandler, OrderService, PaymentGateway, InventoryService 네 구성요소가 분담한다. CancelHandler는 HTTP 경계만 담당하고 OrderService가 paid 분기와 재고 호출을 orchestration한다. PaymentGateway는 신규 Stripe 연동 모듈이며 InventoryService는 기존 재고 API를 재사용한다 [ref:A-4].
 
@@ -155,7 +156,7 @@ flowchart LR
 - **PaymentGateway** (신규): Stripe refund API 호출, PG timeout 시 retry queue enqueue
 - **InventoryService** (기존): line item 기준 재고 release [ref:A-4]
 
-### 데이터 흐름
+### Data Flow
 
 취소 요청은 인증 → 상태 검증 → (paid 시) 환불 → 재고 복구 → DB 저장 순으로 처리한다. happy path는 동기 호출 5단계이며 paid일 때만 PaymentGateway를 호출한다. 최종 DB commit 전에 재고 복구를 완료하여 PRD cancel-flow와 일치시킨다 [ref:A-5].
 
@@ -174,15 +175,38 @@ sequenceDiagram
 4. **OrderService** → **InventoryService**.release (sync)
 5. **OrderService** → DB: status=cancelled, cancelled_at (sync)
 
-## 6. 상세설계
+위 목표 데이터 흐름을 만족시키려면 paid 분기에서 Stripe refund 연동을 Ch.6 Alternatives에서 Tier-1로 확정해야 한다.
 
-Ch.5에서 정의한 구성요소를 endpoint, entity, error branch 수준으로 구체화한다. 아래 표는 개발자가 Ch.6 본문을 스캔할 때 endpoint·entity·error code를 한눈에 찾기 위한 인덱스이다.
+## 6. Alternatives Considered
+
+Ch.5 개념설계는 paid 취소 시 환불·재고 복구 orchestration이 필요한 목표 구조를 보여 준다. 본 장은 그 구조를 만족시키는 Tier-1 선택을 ADR 형식으로 고정한다.
+
+Stripe Refunds API가 payment_intent 기준 환불을 지원하므로 PaymentGateway.refund 채택이 자연스럽다. Status-only cancel은 PRD cancel-flow와 불일치하며 운영 수동 환불을 유발한다. 감사 독자는 결정 요약 표와 부록 B에서 근거 URL을 확인할 수 있다.
+
+Brownfield 팀은 staging 검증 후 cancel_refund_enabled 플래그로 production에 단계 롤아웃한다. InventoryService.release 실패 시 compensating refund 정책은 Ch.7 핵심 처리 흐름에 반영한다. Idempotency-Key 전파는 CancelHandler에서 OrderService까지 일관되게 유지한다.
+
+### Decision Summary
+
+| # | 주제 | 선택 | 상태 | 상세 |
+|---|------|------|------|------|
+| 1 | 환불 연동 | PaymentGateway.refund | 확정 | 아래 **결정** block |
+
+> **결정:** 취소 API에 PaymentGateway.refund 호출을 추가한다.
+> **근거:** [source:stripe-refunds](https://stripe.com/docs/api/refunds)
+> **코드:** `src/orders/cancel_handler.ts:18`
+> **상태:** 확정
+
+Ch.6에서 확정한 PaymentGateway.refund Tier-1 결정에 따라, Ch.7에서는 API·entity·인수조건·테스트를 구현 가능한 수준으로 내린다.
+
+## 7. Detailed Design
+
+Ch.5 Proposed Solution의 구성요소를 endpoint, entity, error branch 수준으로 구체화한다. 아래 표는 개발자가 Ch.7 본문을 스캔할 때 endpoint·entity·error code를 한눈에 찾기 위한 인덱스이다.
 
 | Endpoint / Interface | Entity | Error codes |
 |----------------------|--------|-------------|
 | POST /orders/{id}/cancel | orders | 404, 409, 502 |
 
-### API 및 인터페이스
+### APIs and Interfaces
 
 CancelHandler는 JWT 검증 후 OrderService에 위임하며, cancel endpoint는 Bearer 인증과 Idempotency-Key를 지원한다. paid 상태일 때만 OrderService가 PaymentGateway.refund를 트리거한다 [ref:A-6].
 
@@ -202,7 +226,7 @@ CancelHandler는 JWT 검증 후 OrderService에 위임하며, cancel endpoint는
 
 Idempotency-Key 중복 시 동일 200 응답을 반환한다 [ref:A-6].
 
-### 데이터 모델
+### Data Model
 
 orders 테이블은 status enum과 cancelled_at, payment_intent_id를 PRD order-status와 Stripe refund 요구에 맞게 유지한다. migration V004에서 cancelled_at 컬럼을 추가한다 [ref:A-7].
 
@@ -217,7 +241,7 @@ orders 테이블은 status enum과 cancelled_at, payment_intent_id를 PRD order-
 
 status enum은 pending, paid, shipped, delivered, cancelled 다섯 값이다 [ref:A-7].
 
-### 핵심 처리 흐름
+### Core Processing Flow
 
 OrderService.cancel은 happy path와 PG·재고 실패 분기를 처리한다. PaymentGateway timeout과 InventoryService.release 실패 각각에 대해 보상·retry 정책을 적용한다 [ref:A-8].
 
@@ -240,9 +264,9 @@ flowchart TD
 
 PG timeout 시 retry queue에 refund job을 적재한다 [ref:A-8].
 
-### 인수조건
+### Acceptance Criteria
 
-인수조건(AC)은 구현 완료 여부를 객관적으로 판단하는 기준이다. FR-1 baseline cancel·paid 환불·Idempotency·PG timeout 네 축은 PRD cancel-flow와 직접 연결되며, 각 AC는 Ch.6 테스트 또는 명시된 manual QA로 증명한다 [ref:A-5].
+인수조건(AC)은 구현 완료 여부를 객관적으로 판단하는 기준이다. FR-1 baseline cancel·paid 환불·Idempotency·PG timeout 네 축은 PRD cancel-flow와 직접 연결되며, 각 AC는 Ch.7 테스트 또는 명시된 manual QA로 증명한다 [ref:A-5].
 
 | AC ID | PRD | 인수조건 | 우선순위 | 완료 판정 |
 |-------|-----|----------|----------|-----------|
@@ -251,7 +275,7 @@ PG timeout 시 retry queue에 refund job을 적재한다 [ref:A-8].
 | AC-2 | [source:prd#cancel-flow] | Given 동일 Idempotency-Key When cancel 재시도 Then 동일 200 body, 중복 refund 없음 | Must | Test T-2 passes |
 | AC-3 | [source:prd#cancel-flow] | Given PG timeout When cancel Then 502 PAYMENT_TIMEOUT, 주문 status 변경 없음 | Should | Test T-3 passes (manual staging) |
 
-### 테스트
+### Tests
 
 Brownfield 기준 integration test는 `tests/integration/`에서 Stripe mock과 DB fixture를 사용한다. Must AC에 연결된 T-1·T-2는 merge blocking CI gate로 등록하고, Should AC(T-3)는 staging manual gate로 둔다 [ref:A-6].
 
@@ -262,22 +286,22 @@ Brownfield 기준 integration test는 `tests/integration/`에서 Stripe mock과 
 | T-2 | AC-2 | integration | same Idempotency-Key twice | redis idempotency store | yes |
 | T-3 | AC-3 | integration | PaymentGateway timeout | stripe timeout stub | no |
 
-## 7. 마무리
+## 8. Rollout and Open Items
 
-### 롤아웃·일정
+### Rollout and Milestones
 
 Staging 1주 검증 후 production. Feature flag `cancel_refund_enabled`.
 
-### 리스크
+### Risks
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | PG timeout | 취소 stuck | retry queue + 502 to client |
-| Partial refund policy gap | CS 혼선 | Ch.7 열린 질문으로 확정 대기 |
+| Partial refund policy gap | CS 혼선 | Ch.8 열린 질문으로 확정 대기 |
 
-### 열린 질문
+### Open Questions
 
-- **OQ-1:** partial refund 정책은 PRD에 미정의이다. Non-Goal로 두었으나 CS 정책 확정 시 Ch.4·Ch.6 갱신 필요.
+- **OQ-1:** partial refund 정책은 PRD에 미정의이다. Non-Goal로 두었으나 CS 정책 확정 시 Ch.6·Ch.7 갱신 필요.
 
 ## 부록 A. 출처·코드 위치
 
@@ -292,7 +316,7 @@ Staging 1주 검증 후 production. Feature flag `cancel_refund_enabled`.
 | A-7 | status enum 5값 | [source:prd#order-status] | `src/orders/state.ts:12-28` | |
 | A-8 | PG timeout 시 retry queue 적재 | [source:prd#cancel-flow] | `src/orders/cancel_handler.ts:18` | |
 
-## 부록 B. Ch.4 결정 전문
+## 부록 B. Ch.7 결정 전문
 
 > **결정:** 취소 API에 PaymentGateway.refund 호출을 추가한다.
 > **근거:** [source:stripe-refunds](https://stripe.com/docs/api/refunds)

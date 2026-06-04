@@ -2,20 +2,20 @@
 
 ## Brownfield — Good (forward-only)
 
-Ch.3–4 use lead prose and decision cards — not `요약:` / `> **사실:**` (forbidden in Ch.5–6; avoid in Ch.3–4 per current narrative-rules). Full Ch.2 FR/RTM pattern: see **Ch.2 — 요구사항 분석 (Good)** below.
+Ch.4–5 use lead prose; Tier-1 decision cards live in **Ch.6 Alternatives Considered** — not `요약:` / `> **사실:**` (forbidden in Ch.5–7 per narrative-rules). Full Ch.3 FR/RTM pattern: see **Ch.3 — Requirements (Good)** below.
 
 ```markdown
-## 3. 현재 시스템
+## 4. Existing Solution
 
 B2C 주문 API는 `POST /orders/{id}/cancel` 한 endpoint에서 status만 `cancelled`로 바꾼다. PaymentGateway 호출은 없다.
 
 `CancelHandler`는 JWT 검증 후 `OrderService.cancel`에 위임한다. paid 주문 row에 `payment_intent_id`는 있으나 환불 API는 연결되지 않았다 [ref:A-2].
 
-## 4. 갭과 설계 전환
+## 5. Proposed Solution
 
-PRD cancel-flow는 paid 취소 시 자동 환불을 요구한다. 코드는 status 변경만 하므로 환불 연동은 **미구현** 갭이다.
+PRD cancel-flow는 paid 취소 시 자동 환불을 요구한다. 코드는 status 변경만 하므로 환불 연동은 **미구현** 갭이다. …（transition mermaid, ### Architecture Overview …）
 
-### 환불 연동
+## 6. Alternatives Considered
 
 취소 API는 paid 상태에서 결제 게이트웨이 환불을 호출해야 PRD cancel-flow를 충족한다.
 
@@ -30,61 +30,61 @@ PRD cancel-flow는 paid 취소 시 자동 환불을 요구한다. 코드는 stat
 **참고:** [Stripe Refunds API](https://stripe.com/docs/api/refunds) — payment_intent 기준 환불 생성
 ```
 
-**Why good:** Ch.3 establishes code reality; Ch.4 labels PRD gap; decision card with official URL; no "as above".
+**Why good:** Ch.4 establishes code reality; Ch.5 labels PRD gap; Ch.6 decision card with official URL; no "as above".
 
 ---
 
-## Ch.2 — 요구사항 분석 (Good)
+## Ch.3 — Requirements (Good)
 
 ```markdown
-## 2. 배경과 문제
+## 2. Background
 
 … (≥8 sentences, 2–4 paragraphs: problem, scope, stakeholders) …
 
-### 요구사항 분석
+## 3. Requirements
 
-PRD cancel-flow를 FR 목록과 RTM으로 정제한다. Must FR은 Ch.6 인수조건으로 내려가며, 다음 장에서 코드 대조한다.
+PRD cancel-flow를 FR 목록과 RTM으로 정제한다. Must FR은 Ch.7 인수조건으로 내려가며, 다음 장(Ch.4)에서 코드 대조한다.
 
 #### 기능 요구 (FR)
 
 | FR ID | PRD | 요구 설명 (shall) | 우선순위 | 구현 상태 | 비고 |
 |-------|-----|-------------------|----------|-----------|------|
-| FR-1 | [source:prd#cancel-flow] | paid 취소 시 전액 환불 선행 | Must | 미구현 | Ch.4 |
+| FR-1 | [source:prd#cancel-flow] | paid 취소 시 전액 환불 선행 | Must | 미구현 | Ch.5 gap |
 
 #### 추적성 매트릭스 (RTM)
 
-| PRD 앵커 | REQ ID | (예정) AC ID | 설계 반영 (Ch.5–6) | 테스트 |
+| PRD 앵커 | REQ ID | (예정) AC ID | 설계 반영 (Ch.6–7) | 테스트 |
 |----------|--------|--------------|-------------------|--------|
 | [source:prd#cancel-flow] | FR-1 | AC-1 | PaymentGateway.refund | T-1 |
 
-## 3. 현재 시스템
+## 4. Existing Solution
 ```
 
-**Why good:** REQ IDs exist before Ch.4; RTM links PRD → FR → future AC; bridge into Ch.3 without "앞서".
+**Why good:** REQ IDs in Ch.3 before Ch.5; RTM links PRD → FR → future AC; bridge into Ch.4 without "앞서".
 
 ---
 
-## Ch.2 — 요구사항 분석 (Bad)
+## Ch.3 — Requirements (Bad)
 
 ```markdown
-## 2. 배경과 문제
+## 2. Background
 
 PRD 요구는 위와 같다.
 
-### 요구사항 분석
+#### Functional Requirements (FR)
 
 - 환불 필요
 - 재고 복구 필요
 ```
 
-**Violations:** bullet list instead of FR/RTM tables; no `FR-n` IDs; no `[source:prd#…]`; no bridge sentence to Ch.3.
+**Violations:** bullet list instead of FR/RTM tables; no `FR-n` IDs; no `[source:prd#…]`; no bridge sentence to Ch.4.
 
 ---
 
 ## Brownfield — Bad
 
 ```markdown
-## 4. 갭과 설계 전환
+## 5. Proposed Solution
 
 앞서 설명한 것처럼 환불이 없으므로 Stripe를 붙인다.
 
@@ -92,14 +92,14 @@ PRD 요구는 위와 같다.
 > **근거:** PRD
 ```
 
-**Violations:** back-reference "앞서"; Tier-1 without official URL; gap not labeled in Ch.4 introduction.
+**Violations:** back-reference "앞서"; Tier-1 without official URL; gap not labeled in Ch.5 introduction.
 
 ---
 
 ## Greenfield — Good
 
 ```markdown
-## 3. 시작점
+## 4. Starting Point
 
 요약: 도메인 코드는 없고, Node 20 + TypeScript 보일러플레이트만 있다.
 
@@ -108,7 +108,7 @@ PRD 요구는 위와 같다.
 > **사실:** 런타임 의존성은 express 4.x이다.
 > **근거:** [source:prd#stack] + `package.json:14-20`
 
-## 4. 설계 결정
+## 6. Alternatives Considered
 
 PRD의 REST API 요구에 맞춰 express 라우터 구조를 채택한다.
 
@@ -127,14 +127,14 @@ Greenfield이므로 PRD stack 제약과 공식 문서 기준으로 단일 프로
 **참고:** [Express Routing](https://expressjs.com/en/guide/routing.html) — 라우터·미들웨어 패턴
 ```
 
-**Why good:** Ch.3 honest empty state; Ch.4 decisions with official URL; no fictional modules.
+**Why good:** Ch.4 honest empty state; Ch.6 Alternatives with official URL; no fictional modules.
 
 ---
 
 ## Greenfield — Bad
 
 ```markdown
-## 3. 시작점
+## 4. Starting Point
 
 UserService와 OrderRepository가 src/services에 있다.
 ```
@@ -160,29 +160,9 @@ First line = PM; rest = dev.
 ## Multiple options — Good (documented fork)
 
 ```markdown
-## 4. 설계 결정
+## 5. Proposed Solution
 
-PRD는 주문·재고·결제 간 일관성을 요구한다. 문서 DB와 RDBMS 모두 기술적으로 가능하나 트랜잭션 모델이 다르다.
-
-### Primary datastore
-
-| 항목 | 내용 |
-|------|------|
-| 갈림 | Primary datastore |
-| 권장 | (A) PostgreSQL |
-| 상태 | 권장(미확정) |
-| 코드 | (Greenfield — 코드 없음) |
-
-| 대안 | 설명 | 장점 | 단점 | PRD/코드 적합도 |
-|------|------|------|------|-----------------|
-| (A) PostgreSQL | 관계형 RDBMS | ACID 트랜잭션, JOIN | 스키마 변경 비용 | 높음 — cross-entity 트랜잭션 요구 |
-| (B) MongoDB | 문서 DB | 스키마 유연 | 멀ti-doc 트랜잭션 제약 | 낮음 — 주문·재고 동시 갱신 |
-
-**권장 이유:** PRD는 주문 생성 시 재고 차감과 결제 상태를 하나의 유닛으로 처리하도록 명시한다. PostgreSQL 단일 트랜잭션으로 이 흐름을 직접 표현할 수 있다.
-
-**참고:** [PostgreSQL Transactions](https://www.postgresql.org/docs/current/tutorial-transactions.html) — ACID 보장 범위
-
-## 5. 상위설계
+PRD는 주문·재고·결제 간 일관성을 요구한다. …（As-Is→To-Be mermaid, ### Architecture Overview …）
 
 요약: PostgreSQL 기준 단일 API + DB 2-tier.
 
@@ -195,7 +175,22 @@ PRD는 주문·재고·결제 간 일관성을 요구한다. 문서 DB와 RDBMS 
 ### 데이터 흐름
 …
 
-## 6. 상세설계
+## 6. Alternatives Considered
+
+문서 DB와 RDBMS 모두 기술적으로 가능하나 트랜잭션 모델이 다르다.
+
+### Primary datastore
+
+| 항목 | 내용 |
+|------|------|
+| 갈림 | Primary datastore |
+| 권장 | (A) PostgreSQL |
+| 상태 | 권장(미확정) |
+| 코드 | (Greenfield — 코드 없음) |
+
+**권장 이유:** … **참고:** [PostgreSQL Transactions](https://www.postgresql.org/docs/current/tutorial-transactions.html)
+
+## 7. Detailed Design
 
 ### API 및 인터페이스
 …
@@ -206,7 +201,7 @@ PostgreSQL `orders` / `items` draft …
 ### 핵심 처리 흐름
 …
 
-## 7. 마무리
+## 8. Rollout and Open Items
 
 ### 롤아웃·일정
 …
@@ -226,7 +221,7 @@ PostgreSQL `orders` / `items` draft …
 ## Multiple options — Bad
 
 ```markdown
-## 4. 설계 결정
+## 6. Alternatives Considered
 
 | 항목 | 내용 |
 |------|------|
@@ -245,7 +240,7 @@ PostgreSQL `orders` / `items` draft …
 ## Multiple options — Bad (silent auto-pick)
 
 ```markdown
-## 4. 설계 결정
+## 6. Alternatives Considered
 
 ### 캐시
 
@@ -263,10 +258,10 @@ PostgreSQL `orders` / `items` draft …
 
 ---
 
-## Ch.5–6 depth — Good (strict profile)
+## Ch.5–7 depth — Good (strict profile)
 
 ```markdown
-## 5. 상위설계
+## 5. Proposed Solution
 
 ### 아키텍처 개요
 
@@ -299,7 +294,7 @@ PostgreSQL `orders` / `items` draft …
 4. OrderService → InventoryService.release (sync)
 5. OrderService → DB: status=cancelled, cancelled_at (sync)
 
-## 6. 상세설계
+## 7. Detailed Design
 
 ### API 및 인터페이스
 
@@ -365,14 +360,14 @@ AC rows state verifiable done criteria so QA can judge implementation completene
 | T-2 | AC-2 | unit | duplicate cancel conflict | OrderService fixture | yes |
 ```
 
-**Why good:** every ### has lead prose + depth; components labeled; API + error tables; ≥2 error branches; AC + tests prove done; Ch.5 names reused in Ch.6.
+**Why good:** every ### has lead prose + depth; components labeled; API + error tables; ≥2 error branches; AC + tests prove done; Ch.5 names reused in Ch.7.
 
 ---
 
-## Ch.5–6 depth — Bad (passes old validator, fails strict)
+## Ch.5–7 depth — Bad (passes old validator, fails strict)
 
 ```markdown
-## 5. 상위설계
+## 5. Proposed Solution
 
 ### 아키텍처 개요
 단일 API + DB.
@@ -384,7 +379,7 @@ AC rows state verifiable done criteria so QA can judge implementation completene
 ### 데이터 흐름
 Client → ApiServer → DB
 
-## 6. 상세설계
+## 7. Detailed Design
 
 ### API 및 인터페이스
 `GET /health` — liveness
@@ -403,18 +398,18 @@ Health check returns 200.
 ## Narrative — Good
 
 ```markdown
-## 2. 배경과 문제
+## 2. Background
 
 고객은 B2C 웹몰에서 결제 전후 특정 조건에서 주문을 취소할 수 있어야 한다.
 PRD는 취소 시 재고 복구와 paid 상태 환불을 동시에 요구한다.
 범위는 공개 주문 API이며 B2B bulk cancel은 포함하지 않는다.
 …（8문장 이상，요약: 없음）
 
-## 5. 상위설계
+## 5. Proposed Solution
 
 ### 아키텍처 개요
 
-Ch.4에서 확정한 Stripe 환불 연동에 따라 취소 요청은 얇은 HTTP 경계 뒤 OrderService가 orchestration한다.
+Ch.6에서 확정한 Stripe 환불 연동에 따라 취소 요청은 얇은 HTTP 경계 뒤 OrderService가 orchestration한다.
 JWT 인증된 클라이언트만 CancelHandler에 도달하며, paid 분기에서 PaymentGateway를 호출한다.
 
 ```mermaid
@@ -423,7 +418,7 @@ flowchart LR
   CancelHandler --> OrderService
 ```
 
-## 6. 상세설계
+## 7. Detailed Design
 
 아래 표는 implementer가 먼저 볼 endpoint·entity·에러 코드 매핑이다.
 
@@ -436,18 +431,18 @@ CancelHandler는 Bearer JWT를 검증한 뒤 OrderService.cancel에 위임한다
 | Field | Type | … |
 ```
 
-**Why good:** Ch.2–4 story prose; lead sentences before structure; no meta-labels; `[ref:A-n]` + Appendix A.
+**Why good:** Ch.2–5 story prose; lead sentences before structure; no meta-labels; `[ref:A-n]` + Appendix A.
 
 ---
 
 ## Narrative — Bad
 
 ```markdown
-## 2. 배경과 문제
+## 2. Background
 
 요약: PRD requires cancel.
 
-## 5. 상위설계
+## 5. Proposed Solution
 
 ### 아키텍처 개요
 
@@ -457,7 +452,7 @@ CancelHandler는 Bearer JWT를 검증한 뒤 OrderService.cancel에 위임한다
 - bullet
 ```
 
-**Violations:** `요약:` / `#### 한눈에`; Ch.2 telegraphic; no chapter bridges; `<8` sentences in Ch.2–4.
+**Violations:** `요약:` / `#### 한눈에`; Ch.2 telegraphic; no chapter bridges; `<8` sentences in Ch.2–5.
 
 ---
 
@@ -468,15 +463,15 @@ CancelHandler는 Bearer JWT를 검증한 뒤 OrderService.cancel에 위임한다
 
 ## 목차
 
-1. 서문 …
-2. 배경과 문제 …
+1. Overview …
+2. Background …
 
-## 이 문서 읽는 법
+## How to Read This Doc
 
-- PM: Ch.2–4, Ch.4 `### 결정 요약`
-- Dev: Ch.5–6, 부록 A
+- PM: Ch.2–3, Ch.5 diagram, Ch.6 `### Decision Summary`
+- Dev: Ch.5→Ch.6→Ch.7, Appendix A
 
-## 1. 서문
+## 1. Overview
 
 고객은 결제 전후 특정 조건에서 주문을 취소할 수 있어야 한다.
 …（opening ≥3 sentences）
@@ -485,32 +480,32 @@ CancelHandler는 Bearer JWT를 검증한 뒤 OrderService.cancel에 위임한다
 …
 ```
 
-**Why good:** `## 목차` → `## 이 문서 읽는 법` → `## 1. 서문`; no prose before `## 목차`; Ch.1 has opening + Goals only.
+**Why good:** `## 목차` → `## How to Read This Doc` → `## 1. Overview`; no prose before `## 목차`; Ch.1 Overview has opening + Goals only.
 
 ---
 
 ## Front matter — Bad (nested under Ch.1)
 
 ```markdown
-## 1. 서문
+## 1. Overview
 
 ### 목차
 …
 
-### 이 문서 읽는 법
+### How to Read This Doc
 …
 
 고객은 …
 ```
 
-**Violations:** TOC/reader paths inside Ch.1 as `###`; scan-first blocks buried under 서문.
+**Violations:** TOC/reader paths inside Ch.1 as `###`; scan-first blocks buried under Overview.
 
 ---
 
-## Ch.2–4 paragraphs — Good
+## Ch.2–5 paragraphs — Good
 
 ```markdown
-## 2. 배경과 문제
+## 2. Background
 
 고객은 B2C 웹몰에서 결제 전후 주문을 취소할 수 있어야 한다. PRD는 취소 시 재고 복구와 paid 상태 환불을 동시에 요구한다.
 
@@ -523,10 +518,10 @@ CancelHandler는 Bearer JWT를 검증한 뒤 OrderService.cancel에 위임한다
 
 ---
 
-## Ch.2–4 paragraphs — Bad (run-on)
+## Ch.2–5 paragraphs — Bad (run-on)
 
 ```markdown
-## 2. 배경과 문제
+## 2. Background
 
 고객은 취소가 필요하다. PRD는 환불을 요구한다. 현재는 status만 바꾼다. 운영은 수동이다. 범위는 B2C이다. B2B는 제외이다. …（한 단락에 5문장 이상）
 ```
@@ -538,29 +533,24 @@ CancelHandler는 Bearer JWT를 검증한 뒤 OrderService.cancel에 위임한다
 ## Flow diagrams — Good (four locations)
 
 ```markdown
-## 4. 갭과 설계 전환
+## 5. Proposed Solution
 
-…（prose）
+…（gap prose + As-Is→To-Be mermaid before ### Architecture Overview）
 
-```mermaid
-flowchart LR
-  AsIs[status only] --> ToBe[refund + inventory]
-```
-
-### 결정 요약
-| … |
-
-## 5. 상위설계
-
-### 아키텍처 개요
+### Architecture Overview
 … + ```mermaid flowchart …```
 
-### 데이터 흐름
+### Data Flow
 … + ```mermaid sequenceDiagram …```
 
-## 6. 상세설계
+## 6. Alternatives Considered
 
-### 핵심 처리 흐름
+### Decision Summary
+| … |
+
+## 7. Detailed Design
+
+### Core Processing Flow
 
 ```mermaid
 flowchart TD
@@ -569,27 +559,27 @@ flowchart TD
   Validate -->|error| Fail
 ```
 
-**Why good:** Ch.4 transition before `### 결정 요약`; Ch.5 arch + data flow; Ch.6 flow with error branch.
+**Why good:** Ch.5 transition mermaid before ### Architecture Overview; Ch.6 Decision Summary; Ch.7 flow with error branch.
 
 ---
 
 ## Flow diagrams — Bad
 
 ```markdown
-## 4. 갭과 설계 전환
+## 5. Proposed Solution
 
-### 결정 요약
-（mermaid 없음）
+### Architecture Overview
+단일 API + DB.（no transition mermaid, no arch mermaid — strict fails）
 
-## 5. 상위설계
+## 6. Alternatives Considered
 
-### 아키텍처 개요
-단일 API + DB.（mermaid 없음 — strict도 실패）
+### Decision Summary
+（no bridge from Ch.5）
 
-## 6. 상세설계
+## 7. Detailed Design
 
-### 핵심 처리 흐름
+### Core Processing Flow
 Happy path only, no mermaid.
 ```
 
-**Violations:** missing required mermaid blocks; Ch.6 no error branch in diagram.
+**Violations:** missing required mermaid blocks in Ch.5; Ch.7 no error branch in diagram.

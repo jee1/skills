@@ -4,6 +4,22 @@
 **Status:** Superseded in part — **source of truth:** `prd-to-tdd/SKILL.md` (7 chapters, Ch.2 `### 요구사항 분석`, strict + `--narrative` validation). This file retains historical context; do not use the 5-chapter outline below for new work.  
 **Scope:** Agent skill that ingests PRD (Markdown / Google Docs), analyzes codebase, and writes a forward-only Technical Design Document (TDD).
 
+### Historical: 5-chapter → 7-chapter split (why Ch.4 precedes Ch.5)
+
+Do **not** use the §5 table below for new TDDs. Use `prd-to-tdd/SKILL.md` (7 chapters).
+
+| Former (5-chapter spec) | Current (7-chapter) | Role |
+|-------------------------|---------------------|------|
+| 1. 서문 | 1. 서문 | 起 |
+| 2. 배경과 문제 | 2. 배경 + `### 요구사항 분석` | 承 |
+| 3. 현재 / 시작점 | 3. 현재 시스템 / 시작점 | 承 |
+| 4. 갭 / 설계 전환 | 4. 갭·설계 결정 (ADR, Tier-1) | 转 |
+| 5. **목표 설계와 마무리** (combined) | **5. 상위설계** (HLD diagrams) | 结 macro |
+| *(was inside old Ch.5)* | **6. 상세설계** (API, AC, tests) | 结 micro |
+| *(was inside old Ch.5)* | **7. 마무리** (rollout, risks, OQ) | 结 close |
+
+**Reader note:** H2 **「5. 상위설계」** is **target architecture (HLD)** only. **Architectural decisions** live in **Ch.4**, not after Ch.5. Optional read order: Ch.5 → Ch.4 → Ch.6. See `narrative-rules.md` § 설계 계층.
+
 ---
 
 ## 1. Problem & Goal
