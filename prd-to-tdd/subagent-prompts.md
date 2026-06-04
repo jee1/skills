@@ -1,15 +1,14 @@
 # Subagent Prompt Templates
 
-**Enhanced path** (dual-brain installed — default): Phase **2b** §6–7, Phase **3b** §8, Phase **3c** §9, Phase **6** Mode B §4–5.
+Paths: [path-selection.md](path-selection.md) — **standard** | **enhanced** | **full**.
 
-**Standard path:** skip §6–9; Phase **6** Mode A §1–3 parallel.
+| Path | Pre-draft | Phase 6 |
+|------|-----------|---------|
+| **standard** | skip §6–9 | Mode A §1–3 parallel |
+| **enhanced** | §6–9 | Mode B §4, optional §1 |
+| **full** | §6–9 | Mode C §4 then §1–3 parallel |
 
-After `validate-tdd.py` strict (+ `--narrative`) passes:
-
-| Phase 6 | When | Spawn |
-|---------|------|-------|
-| **Mode B (Enhanced default)** | `dual-brain/SKILL.md` exists; user did not say `standard reviewers` | §4 sequential, §1 if doubt |
-| **Mode A (Standard)** | dual-brain missing or user override | §1–3 **in parallel** |
+After `validate-tdd.py` strict (+ `--narrative`) passes, use the Phase 6 mode for the selected path (see Spawn Pattern below).
 
 Use `readonly: true` where supported. Merge output; any **Critical** finding blocks completion until fixed (max 2 full cycles).
 
@@ -193,7 +192,7 @@ If no issues: return "PASS"
 
 ---
 
-## 6. right-brain-prd-analyst (Phase 2b — Enhanced only)
+## 6. right-brain-prd-analyst (Phase 2b — enhanced & full)
 
 **Tool:** Task `generalPurpose`, `readonly: true`  
 **When:** After Phase 2 code analysis; before Phase 3 outline.  
@@ -225,7 +224,7 @@ Return markdown sections: ## Grilling, ## Lexicon, ## Macro-context, ## Memory, 
 
 ---
 
-## 7. left-brain-code-analyst (Phase 2b — Enhanced only)
+## 7. left-brain-code-analyst (Phase 2b — enhanced & full)
 
 **Tool:** Task `generalPurpose`, `readonly: true`  
 **When:** Immediately after §6 Right Brain output (same Phase 2b).
@@ -257,7 +256,7 @@ Return markdown: ## Verified facts, ## Gaps, ## Candidates, ## Risks, ## Right B
 
 ---
 
-## 8. right-brain-outline-grill (Phase 3b — Enhanced only)
+## 8. right-brain-outline-grill (Phase 3b — enhanced & full)
 
 **Tool:** Task `generalPurpose`, `readonly: true`  
 **When:** After Phase 3 outline draft; before Phase 3b′ user confirm.
@@ -290,7 +289,7 @@ Do not write Ch.6 decision card prose for topics awaiting user pick.
 
 ---
 
-## 9. left-brain-design-blueprint (Phase 3c — Enhanced only)
+## 9. left-brain-design-blueprint (Phase 3c — enhanced & full)
 
 **Tool:** Task `generalPurpose`, `readonly: true`  
 **When:** After Phase 3b (+ 3b′ if user confirmed forks). Before Phase 4 draft.
@@ -360,10 +359,10 @@ Max 2 rounds total for script + subagents cycle.
 Phase 7 report: validation: script + 3 reviewers (default)
 ```
 
-### Enhanced path — Phases 2b, 3b, 3c (dual-brain installed)
+### Pre-draft — Phases 2b, 3b, 3c (paths **enhanced** & **full**)
 
 ```
-Probe dual-brain/SKILL.md — if missing, use Standard path only.
+Requires dual-brain/SKILL.md. If missing, path must be standard.
 
 Phase 2b (sequential):
 1. right-brain-prd-analyst     — §6 + PRD + Phase 2 notes + optional MEMORY.md
@@ -382,7 +381,7 @@ Phase 3c:
 → Orchestrator drafts TDD from blueprint (Phase 4)
 ```
 
-### Mode B — Phase 6 (Enhanced default)
+### Mode B — Phase 6 (path **enhanced**)
 
 ```
 Sequential:
@@ -393,12 +392,40 @@ Optional:
 
 If any Critical → edit TDD → validate-tdd.py → re-spawn (max 2 rounds)
 
-Phase 7 report: validation: script + dual-brain enhanced (2b/3b/3c + left-brain [+ narrative])
+Phase 7: path: enhanced | validation: script + 2b/3b/3c + left-brain [+ narrative]
+```
+
+### Mode C — Phase 6 (path **full**)
+
+```
+Sequential first:
+1. left-brain-verification-reviewer — §4 + TDD + PRD + citation-tiers.md + repo
+
+Then parallel:
+2. narrative-reviewer       — §1
+3. citation-reviewer        — §2
+4. code-grounding-reviewer  — §3
+
+Orchestrator merge (same round):
+- Dedupe by chapter:line + issue gist; keep higher severity
+- Factual conflict on same line: prefer code-grounding > citation > narrative
+- Prose/bridge conflict: prefer narrative
+
+If any Critical → edit → validate-tdd.py → repeat Mode C (max 2 rounds total)
+
+Phase 7: path: full | validation: script + 2b/3b/3c + left-brain + 3 reviewers (deduped)
 ```
 
 ### dual-brain unavailable
 
 ```
-Do not simulate Right/Left Brain personas. Use Mode A only.
-Tell user once in Phase 7: dual-brain: not installed — default reviewers
+Auto path: standard only. Skip §6–9. Phase 6 Mode A only.
+Phase 7: path: standard | dual-brain: not installed
+```
+
+### User forced standard with dual-brain on disk
+
+```
+Skip 2b/3b/3c even if score would be enhanced/full unless user later requests re-run.
+Phase 6: Mode A
 ```

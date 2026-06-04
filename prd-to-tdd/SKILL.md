@@ -1,11 +1,11 @@
 ---
 name: prd-to-tdd
 description: >-
-  Analyzes PRD (Markdown or Google Docs via gws) and the full codebase to write
-  a forward-only Design Document (Google Design Doc 8 chapters, 기승전결 narrative).
-  When dual-brain is installed, uses Enhanced path by default: Phase 2b analysis,
-  Right Brain grill, Left Brain blueprint before draft, compact Left Brain review.
-  Use for TDD, Design Doc, 기술설계서, or PRD path/URL plus design analysis.
+  Analyzes PRD and codebase into a forward-only Google Design Doc (8 chapters).
+  Paths: standard | enhanced | full — auto-selected from complexity after Phase 2
+  unless user says standard/enhanced/full. full = dual-brain pre-draft + Left Brain
+  then 3 parallel reviewers. Requires dual-brain skill for enhanced/full.
+  Use for TDD, Design Doc, 기술설계서, or PRD path/URL.
 ---
 
 # PRD → Design Doc (TDD)
@@ -26,26 +26,27 @@ No implementation plans, tasks, or code changes. No auto handoff to `writing-pla
 | [outline-template.md](outline-template.md) | Phase 3 |
 | [citation-tiers.md](citation-tiers.md) | Ch.6–7 citations |
 | [subagent-prompts.md](subagent-prompts.md) | Phase 6 |
-| [dual-brain-integration.md](dual-brain-integration.md) | **Enhanced path** when dual-brain installed (2b, 3b, 3c, 6) |
+| [path-selection.md](path-selection.md) | **standard / enhanced / full** auto-pick + overrides |
+| [dual-brain-integration.md](dual-brain-integration.md) | dual-brain phases 2b–3c and Phase 6 modes |
 | [examples.md](examples.md) | Tone samples (may lag new H2 names) |
 
 ## Checklist
 
 ```
 PRD → Design Doc:
-- [ ] Path: probe dual-brain/SKILL.md → Enhanced (default if found) | Standard
+- [ ] Step 0: User override? (standard | enhanced | full) — path-selection.md
 - [ ] Phase 1: PRD ingest
 - [ ] Phase 2: Repo analysis + mode
-- [ ] Phase 2b: Dual-brain analysis brief (Enhanced only)
-- [ ] Phase 3: Outline (Ch.5–7 mapping, Tier-1 tags; use 2b brief)
-- [ ] Phase 3b: Right Brain grill (Enhanced) or skip to 3b′ only
-- [ ] Phase 3b′: User confirm Tier-1 forks (if needs-user-confirm)
-- [ ] Phase 3c: Left Brain design blueprint (Enhanced only)
-- [ ] Phase 4: Draft Ch.1–8 + appendices (follow 3c blueprint)
-- [ ] Phase 5: validate-tdd.py (strict)
-- [ ] Phase 5b: validate-tdd.py --narrative
-- [ ] Phase 6: Mode B (Enhanced) or Mode A (Standard), ≤2 rounds
-- [ ] Phase 7: Save + report path used; optional .dual-brain/MEMORY.md update
+- [ ] Path pick: complexity_score → standard | enhanced | full (announce once)
+- [ ] Phase 2b: Analysis brief (enhanced & full only)
+- [ ] Phase 3: Outline
+- [ ] Phase 3b: Right Brain grill (enhanced & full) | orchestrator-only (standard)
+- [ ] Phase 3b′: User confirm Tier-1 forks (if any)
+- [ ] Phase 3c: Left Brain blueprint (enhanced & full only)
+- [ ] Phase 4: Draft Ch.1–8
+- [ ] Phase 5–5b: validate-tdd.py strict + --narrative
+- [ ] Phase 6: Mode A | B | C per path, ≤2 rounds
+- [ ] Phase 7: Save; report path + score; optional MEMORY.md
 - [ ] STOP
 ```
 
@@ -80,9 +81,32 @@ Frontmatter `mode`. Ch.4 title: **Existing Solution** (brownfield) or **Starting
 
 ---
 
-## Phase 2b — Dual-Brain Analysis (Enhanced path)
+## Path Selection (after Phase 2)
 
-**Skip when** Standard path or user said `no dual-brain`.
+Follow [path-selection.md](path-selection.md).
+
+1. Apply **user override** if present (`full` / `enhanced` / `standard`).
+2. If `dual-brain/SKILL.md` **missing** → **standard** only.
+3. Else compute **complexity_score** from Phase 1–2 signals → auto map:
+   - **≥ 8** → **full**
+   - **4–7** → **enhanced**
+   - **≤ 3** + trivial greenfield (no gaps, no forks) → **standard**
+   - **≤ 3** + brownfield or any gap → **enhanced**
+4. Tell user once: `prd-to-tdd path: … (score: N, reason: …)` before Phase 3.
+
+Store in draft frontmatter when known: `prd_to_tdd_path`, `complexity_score`.
+
+| Path | 2b / 3b / 3c | Phase 6 |
+|------|----------------|---------|
+| **standard** | Skip | Mode A — §1–3 parallel |
+| **enhanced** | Run | Mode B — §4, optional §1 |
+| **full** | Run | Mode C — §4 then §1–3 parallel, dedupe |
+
+---
+
+## Phase 2b — Dual-Brain Analysis (enhanced & full)
+
+**Skip when** path is **standard**.
 
 After Phase 2, run [dual-brain-integration.md](dual-brain-integration.md) Phase 2b:
 
@@ -108,34 +132,32 @@ Phase 4 design prose order: **Ch.5 Proposed → Ch.6 Alternatives → Ch.7 Detai
 
 ---
 
-## Phase 3b — Right Brain Grill (Enhanced path)
+## Phase 3b — Right Brain Grill (enhanced & full)
 
-When dual-brain is installed, run **before** user confirmation — see [dual-brain-integration.md](dual-brain-integration.md) Phase 3b and [subagent-prompts.md](subagent-prompts.md) §8.
+When path is **enhanced** or **full**, run **before** user confirmation — [dual-brain-integration.md](dual-brain-integration.md), [subagent-prompts.md](subagent-prompts.md) §8.
 
-Refine outline from grill output; add `OQ-*` for unresolved items.
-
-**Standard path:** skip spawn; go to Phase 3b′ when needed.
+**Standard path:** orchestrator-only outline check; go to Phase 3b′ when needed.
 
 ---
 
 ## Phase 3b′ — User Confirmation
 
-When outline has `needs-user-confirm`: present forks (use Right Brain structured message if Enhanced), get pick, then Shape A `확정` in Ch.6. Defer → Shape B + Ch.8 Open Questions.
+When outline has `needs-user-confirm`: present forks (use Right Brain message on enhanced/full), get pick, then Shape A `확정` in Ch.6. Defer → Shape B + Ch.8 Open Questions.
 
 ---
 
-## Phase 3c — Left Brain Design Blueprint (Enhanced path)
+## Phase 3c — Left Brain Design Blueprint (enhanced & full)
 
 After outline + 3b (+ 3b′ if applicable), spawn Left Brain — [subagent-prompts.md](subagent-prompts.md) §9.
 
-Keep blueprint as Phase 4 scratchpad: Ch.5–7 skeleton (components, flow steps, API/AC/test tables, Ch.6 decision fields). **Do not start Phase 4 without blueprint on Enhanced path.**
+Keep blueprint as Phase 4 scratchpad. **Do not start Phase 4 on enhanced/full without blueprint.**
 
 ---
 
 ## Phase 4 — Draft
 
 1. Read [tdd-template.md](tdd-template.md), [design-sections.md](design-sections.md), [narrative-rules.md](narrative-rules.md)
-2. **Enhanced:** expand [Phase 3c blueprint](dual-brain-integration.md) into prose; apply Analysis Brief lexicon and gaps
+2. **enhanced/full:** expand Phase 3c blueprint; apply Analysis Brief lexicon and gaps
 3. Write **Ch.1 → Ch.4** in order (Overview through Existing/Starting Point)
 4. Write **Ch.5 → Ch.6 → Ch.7** (Proposed → Alternatives → Detailed)
 5. Write **Ch.8** Rollout and Open Items
@@ -164,14 +186,13 @@ Both must exit `0` before Phase 6.
 
 ## Phase 6 — Subagent Review
 
-Probe dual-brain skill at run start ([dual-brain-integration.md](dual-brain-integration.md)).
+Use path chosen in [path-selection.md](path-selection.md). See [subagent-prompts.md](subagent-prompts.md).
 
-| Path | Phase 6 |
-|------|---------|
-| **Enhanced** (dual-brain on disk; default) | **Mode B** — left-brain-verification (§4), then narrative (§1) if doubt |
-| **Standard** | **Mode A** — §1–3 parallel |
-
-User override: `standard reviewers` → Mode A even if dual-brain installed.
+| Path | Phase 6 mode |
+|------|----------------|
+| **standard** | **A** — narrative + citation + code-grounding (parallel) |
+| **enhanced** | **B** — left-brain (§4); narrative (§1) if doubt |
+| **full** | **C** — left-brain (§4), then §1–3 parallel; dedupe findings |
 
 Max 2 rounds; then `validation_passed: true` or stop with Critical list.
 
@@ -179,7 +200,7 @@ Max 2 rounds; then `validation_passed: true` or stop with Critical list.
 
 ## Phase 7 — Save & Stop
 
-Report: path, **validation path** (Enhanced vs Standard), mode, Ch.6 forks, Ch.3 FR/OQ count, Ch.7 AC/test summary. If Enhanced: note whether 2b/3b/3c ran and any `.dual-brain/MEMORY.md` updates.
+Report: `prd_to_tdd_path`, `complexity_score`, mode, validation summary, Ch.6 forks, Ch.3 FR/OQ count, Ch.7 AC/test summary. Note 2b/3b/3c and Phase 6 mode (A/B/C). Optional `.dual-brain/MEMORY.md` updates on enhanced/full.
 
 Optional next step (mention only): **`tdd-to-tasks`**.
 

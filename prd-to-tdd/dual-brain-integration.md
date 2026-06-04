@@ -1,38 +1,33 @@
 # Dual-Brain Integration
 
-When **`dual-brain/SKILL.md` exists** on disk, `prd-to-tdd` uses the **Enhanced path** by default for deeper PRD↔code analysis and richer Design Doc drafting. When the skill is missing, use the **Standard path** (orchestrator-only Phase 3b + three parallel reviewers in Phase 6).
+`prd-to-tdd` supports three pipeline paths: **standard**, **enhanced**, **full**. See **[path-selection.md](path-selection.md)** for auto-selection (complexity score after Phase 2) and user overrides.
 
-**Protocol source:** `~/.cursor/skills/dual-brain/SKILL.md` (also `~/.codex/skills/`, `~/.agents/skills/`, `~/.claude/skills/`).
+| Path | dual-brain pre-draft | Phase 6 |
+|------|----------------------|---------|
+| **standard** | — | 3 reviewers parallel |
+| **enhanced** | 2b, 3b, 3c | Left Brain (+ narrative if doubt) |
+| **full** | 2b, 3b, 3c | Left Brain **then** 3 reviewers parallel |
 
-**Project memory:** `<target-repo>/.dual-brain/MEMORY.md` — load during every dual-brain step (Step 0A in dual-brain SKILL). Memory is advisory; **code and PRD beat stale memory**.
+**Protocol source:** `~/.cursor/skills/dual-brain/SKILL.md` (also `~/.codex/`, `~/.agents/`, `~/.claude/`).
 
----
+**Project memory:** `<target-repo>/.dual-brain/MEMORY.md` — advisory; **code and PRD beat stale memory**.
 
-## Path selection (orchestrator, start of run)
-
-Probe in order; **first existing path wins**:
-
-1. `~/.cursor/skills/dual-brain/SKILL.md`
-2. `~/.codex/skills/dual-brain/SKILL.md`
-3. `~/.agents/skills/dual-brain/SKILL.md`
-4. `~/.claude/skills/dual-brain/SKILL.md`
-
-| Result | Path | Phase 6 |
-|--------|------|---------|
-| **Found** | **Enhanced** (default) | Mode B — left-brain-verification (+ narrative if doubt) |
-| **Not found** | **Standard** | Mode A — three parallel reviewers |
-
-Tell the user once at Phase 7 which path ran. User may say `standard reviewers` or `no dual-brain` to force Standard path even when installed.
-
-| User signal | Path |
-|-------------|------|
-| `dual brain`, `dual-brain`, `left brain right brain` | Enhanced (explicit) |
-| `standard reviewers`, `no dual-brain` | Standard |
-| (default when skill on disk) | **Enhanced** |
+**dual-brain missing** → only **standard** is available (no 2b/3c).
 
 ---
 
-## Enhanced path — phase map
+## Path selection (quick)
+
+1. User override? → see [path-selection.md](path-selection.md) Step 0  
+2. Probe dual-brain SKILL on disk  
+3. After Phase 1–2, compute **complexity_score** → auto **standard | enhanced | full**  
+4. Announce path once before Phase 3  
+
+Do **not** default to enhanced when score ≥ 8 — use **full**.
+
+---
+
+## Enhanced & full — shared phase map
 
 ```text
 Phase 1 PRD ingest
@@ -44,15 +39,15 @@ Phase 3b′ User confirm (needs-user-confirm only)
 Phase 3c Left Brain design blueprint          ← NEW
 Phase 4 Draft Ch.1–8 (uses 3c blueprint)
 Phase 5 validate-tdd.py (+ --narrative)
-Phase 6 Mode B review
+Phase 6 review (Mode B enhanced | Mode C full)
 Phase 7 Save & report
 ```
 
-Standard path skips **2b**, **3c**, uses orchestrator-only **3b′**, and **Phase 6 Mode A**.
+**Standard** skips **2b**, **3b** spawn, **3c**; orchestrator **3b′** only; Phase 6 Mode A.
 
 ---
 
-## Phase 2b — Dual-brain analysis (Enhanced only)
+## Phase 2b — Dual-brain analysis (enhanced & full only)
 
 **Goal:** Deepen PRD understanding and code grounding **before** the outline. Output is **internal notes** (not pasted into the TDD verbatim).
 
@@ -73,9 +68,9 @@ Do **not** skip Phase 2 Serena/code scan; 2b **interprets** Phase 2 evidence.
 
 ---
 
-## Phase 3b — Right Brain grill (Enhanced)
+## Phase 3b — Right Brain grill (enhanced & full)
 
-**When Enhanced:** run **always** after outline draft (even if no `needs-user-confirm`).
+**When enhanced or full:** run **always** after outline draft (even if no `needs-user-confirm`).
 
 | Outline signal | Right Brain focus |
 |----------------|-------------------|
@@ -98,7 +93,7 @@ Do **not** skip Phase 2 Serena/code scan; 2b **interprets** Phase 2 evidence.
 
 ---
 
-## Phase 3c — Left Brain design blueprint (Enhanced only)
+## Phase 3c — Left Brain design blueprint (enhanced & full only)
 
 **Goal:** Verified skeleton for **Ch.5 → Ch.6 → Ch.7** before prose drafting.
 
@@ -110,11 +105,11 @@ Do **not** skip Phase 2 Serena/code scan; 2b **interprets** Phase 2 evidence.
    - Ch.7: API table skeleton, entity fields, error branches (≥2), AC IDs + conditions, test matrix
 4. Resolve Left Brain vs Right Brain conflicts once (dual-brain SKILL § Step 3); code/PRD win over memory.
 
-Phase 4 must **follow** the blueprint; deviations need a note in Ch.8 Open Questions.
+Phase 4 must **follow** the blueprint on **enhanced/full**; deviations need a note in Ch.8 Open Questions.
 
 ---
 
-## Phase 4 — Drafting with dual-brain (Enhanced)
+## Phase 4 — Drafting with dual-brain (enhanced & full)
 
 Orchestrator writes the TDD (not delegated wholesale). Use:
 
@@ -133,22 +128,32 @@ After draft, optional **light Left Brain pass** (orchestrator self-check against
 
 ## Phase 6 — Review modes
 
-### Mode A — Standard
+After `validate-tdd.py` strict + `--narrative` exit `0`. Map findings to `severity | chapter:line | issue | fix`. Max 2 rounds.
+
+### Mode A — path **standard**
 
 Three parallel tasks — [subagent-prompts.md](subagent-prompts.md) §1–3.
 
-### Mode B — Enhanced (default when dual-brain installed)
-
-After `validate-tdd.py` strict + `--narrative` exit `0`:
+### Mode B — path **enhanced**
 
 | Step | Agent | Prompt |
 |------|-------|--------|
 | 1 | left-brain-verification-reviewer | §4 (sequential) |
 | 2 | narrative-reviewer | §1 only if semantic doubt |
 
-Map prose to `severity | chapter:line | issue | fix`. **Critical** → edit → Phase 5 → Phase 6 (max 2 rounds).
+### Mode C — path **full**
 
-Phase 7 report: `validation: script + dual-brain enhanced (2b/3b/3c + left-brain [+ narrative])`.
+| Step | Agent | Prompt |
+|------|-------|--------|
+| 1 | left-brain-verification-reviewer | §4 (sequential) |
+| 2 | narrative + citation + code-grounding | §1–3 **parallel** |
+| 3 | Orchestrator | Dedupe per [path-selection.md](path-selection.md) |
+
+Phase 7 report examples:
+
+- `path: standard | validation: script + 3 reviewers`
+- `path: enhanced | validation: script + 2b/3b/3c + left-brain [+ narrative]`
+- `path: full | validation: script + 2b/3b/3c + left-brain + 3 reviewers (deduped)`
 
 ---
 
@@ -164,7 +169,7 @@ Phase 7 report: `validation: script + dual-brain enhanced (2b/3b/3c + left-brain
 
 ---
 
-## Memory auto-save (Enhanced)
+## Memory auto-save (enhanced & full)
 
 After Phase 7 (or when durable project facts emerged), orchestrator may update `<target-repo>/.dual-brain/MEMORY.md` per dual-brain SKILL § Step 4A:
 

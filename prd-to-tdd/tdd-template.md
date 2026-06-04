@@ -13,6 +13,8 @@ prd_source: "{{path_or_google_docs_url}}"
 generated_at: {{YYYY-MM-DD}}
 validation_passed: false
 review_rounds: 0
+prd_to_tdd_path: {{standard|enhanced|full}}
+complexity_score: {{N}}
 ---
 
 # {{feature_title}} — Design Document
