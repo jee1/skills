@@ -2,11 +2,12 @@
 name: prd-review
 description: >-
   Reviews a PRD for ambiguity, internal contradictions, missing acceptance
-  criteria, and TDD-readiness before prd-to-tdd. Produces a structured review
-  report with FR/NFR/OQ draft inventory and a readiness gate. Optional dual-brain
-  (Right=assumptions/gaps, Left=consistency/testability). Use when the user asks
-  to review a PRD, find ambiguous or conflicting requirements, PRD quality gate,
-  or "PRD 검토" / "모호성" / "상충" before technical design.
+  criteria, and TDD-readiness before prd-to-tdd. Paths: standard | enhanced | full
+  — auto-selected from PRD complexity after Phase 2 unless user overrides.
+  full = dual-brain Right→Left then 3 parallel PRD reviewers. Produces a structured
+  review report with FR/NFR/OQ draft inventory and a readiness gate. Use when the
+  user asks to review a PRD, find ambiguous or conflicting requirements, PRD quality
+  gate, or "PRD 검토" / "모호성" / "상충" before technical design.
 ---
 
 # PRD Review (TDD-readiness gate)
@@ -22,23 +23,27 @@ Makes the PRD clear enough that `prd-to-tdd` can classify requirements, trace PR
 | File | When |
 |------|------|
 | [review-taxonomy.md](review-taxonomy.md) | Phase 2 coverage scan |
+| [path-selection.md](path-selection.md) | **standard / enhanced / full** auto-pick + overrides |
 | [report-template.md](report-template.md) | Phase 5 report |
-| [dual-brain-integration.md](dual-brain-integration.md) | Phase 3b if dual-brain installed |
-| [subagent-prompts.md](subagent-prompts.md) | Phase 3b Mode B |
+| [dual-brain-integration.md](dual-brain-integration.md) | Phase 3b (enhanced & full) |
+| [subagent-prompts.md](subagent-prompts.md) | Phase 3b + Phase 6 |
 | `~/.agents/skills/gws-shared/SKILL.md` | Google Docs PRD ingest |
 
 ## Checklist
 
 ```
 PRD Review Progress:
-- [ ] Phase 1: PRD ingest + feature_slug
+- [ ] Step 0: User override? (standard | enhanced | full) — path-selection.md
+- [ ] Phase 1: PRD ingest + feature_slug + word count
 - [ ] Phase 2: Taxonomy coverage map (Clear / Partial / Missing)
-- [ ] Phase 3: Findings inventory (AMB / CTR / CMP / TST / TRM / SCP)
-- [ ] Phase 3b: dual-brain Right→Left (optional)
+- [ ] Path pick: complexity_score → standard | enhanced | full (announce once)
+- [ ] Phase 3: Orchestrator findings (AMB / CTR / CMP / TST / TRM / SCP)
+- [ ] Phase 3b: dual-brain Right→Left (enhanced & full only)
 - [ ] Phase 4: Draft FR/NFR/OQ pre-inventory for prd-to-tdd
+- [ ] Phase 6: Subagent review per path (A | B | C), ≤2 rounds
 - [ ] Phase 5: Write review report + readiness gate
-- [ ] Phase 5b: validate-prd-review.py pass (if report written)
-- [ ] Phase 6 (optional): Clarification loop (≤5 questions)
+- [ ] Phase 5b: validate-prd-review.py pass
+- [ ] Phase 7 (optional): Clarification loop (≤5 questions)
 - [ ] STOP — suggest prd-to-tdd only if gate ≠ blocked
 ```
 
@@ -54,7 +59,7 @@ Same input rules as `prd-to-tdd` Phase 1:
 | Google Docs URL (`docs.google.com/document/`) | Read `gws-shared`, then `gws docs` per `gws-docs` |
 | Unclear | Ask user once |
 
-Extract: `feature_slug`, title, section headings for `[source:prd#Section]` anchors, word count.
+Extract: `feature_slug`, title, section headings for `[source:prd#Section]` anchors, **word count**, actor count estimate.
 
 **Stop if:** empty PRD or gws auth failure.
 
@@ -76,11 +81,30 @@ Prioritize categories that block `prd-to-tdd`:
 - Explicit out-of-scope
 - Terminology consistency
 
-Keep an internal coverage map; surface it in the Phase 5 report § Coverage map.
+Keep an internal coverage map; surface **every taxonomy row** in the Phase 5 report § Coverage map.
 
 ---
 
-## Phase 3 — Structured Findings
+## Path Selection (after Phase 2)
+
+Follow [path-selection.md](path-selection.md).
+
+1. Apply **user override** if present (`full` / `enhanced` / `standard`).
+2. If `dual-brain/SKILL.md` **missing** → **standard** only.
+3. Else compute **complexity_score** from Phase 1–2 signals → auto map.
+4. Tell user once: `prd-review path: … (score: N, reason: …)` before Phase 3.
+
+Store for report frontmatter: `prd_review_path`, `complexity_score`, `phase_6_mode`.
+
+| Path | Phase 3b | Phase 6 |
+|------|----------|---------|
+| **standard** | Skip | Mode **A** — §5–7 parallel |
+| **enhanced** | Run | Mode **B** — §2; optional §5 if doubt |
+| **full** | Run | Mode **C** — §5–7 parallel (§1→§2 already in 3b) |
+
+---
+
+## Phase 3 — Structured Findings (orchestrator draft)
 
 Classify every issue with stable IDs:
 
@@ -111,24 +135,24 @@ Severity: `Critical` | `High` | `Medium` | `Low`.
 
 **Scope:** feature goals without explicit Non-Goals / Out of scope list.
 
+This draft is **merged** with Phase 3b and Phase 6 output before Phase 5.
+
 ---
 
-## Phase 3b — Dual-Brain (optional)
+## Phase 3b — Dual-Brain (enhanced & full only)
 
-Probe in order; first existing path wins:
+**Skip when** path is **standard**.
 
-1. `~/.cursor/skills/dual-brain/SKILL.md`
-2. `~/.codex/skills/dual-brain/SKILL.md`
-3. `~/.agents/skills/dual-brain/SKILL.md`
+When path is **enhanced** or **full**, dual-brain is **mandatory** (not optional).
 
-| Installed | Action |
-|-----------|--------|
-| Yes | Follow [dual-brain-integration.md](dual-brain-integration.md) — Right Brain then Left Brain, sequential |
-| No | Orchestrator completes Phase 3; note `dual_brain_used: false` in report |
+Follow [dual-brain-integration.md](dual-brain-integration.md) — Right Brain then Left Brain, sequential.
 
-Map dual-brain prose to the finding line format before Phase 5.
+Map dual-brain prose to the finding line format. Max **one** mediation round if Right and Left refute a core premise.
 
-Max **one** mediation round if Right and Left refute a core premise.
+Set `dual_brain_used: true` in report frontmatter.
+
+| dual-brain missing but user forced enhanced/full | Downgrade to **standard**; explain once |
+|--------------------------------------------------|------------------------------------------|
 
 ---
 
@@ -142,6 +166,31 @@ Draft tables for report § Pre-inventory (do not invent requirements absent from
 - Tag items that would become `needs-user-confirm` in `prd-to-tdd` Phase 3 outline
 
 Optional RTM draft: PRD anchor → REQ ID → AC TBD.
+
+Refresh after Phase 6 merge.
+
+---
+
+## Phase 6 — Subagent Review
+
+Run **before** Phase 5 report write. Use path from [path-selection.md](path-selection.md). Prompts: [subagent-prompts.md](subagent-prompts.md).
+
+| Path | Mode | Action |
+|------|------|--------|
+| **standard** | **A** | Spawn §5, §6, §7 **parallel** (`readonly: true`) |
+| **enhanced** | **B** | Spawn §2 Left Brain; if orchestrator doubt on scope/ambiguity, also §5 |
+| **full** | **C** | Spawn §5–7 **parallel** (3b already ran §1→§2); dedupe per path-selection |
+
+**Merge (orchestrator):**
+
+1. Combine Phase 3 + 3b + Phase 6 findings
+2. Dedupe by `prd-anchor` + issue gist; keep higher severity
+3. Reassign stable IDs (no duplicate `AMB-1`)
+4. Refresh Phase 4 pre-inventory and recompute gate inputs
+
+Max **2** full Phase 6 cycles. Any **Critical** finding blocks `ready` until fixed in PRD or accepted by user in Phase 7.
+
+**Do not** write the report file until Phase 6 completes (or is skipped only on **standard** with Mode A done).
 
 ---
 
@@ -159,19 +208,19 @@ Optional RTM draft: PRD anchor → REQ ID → AC TBD.
 | **needs-clarification** | No `Critical`; only `High`/`Medium`/`Low` remain; `OQ-*` listed with suggested answers |
 | **blocked** | Any `Critical`; or ≥1 unresolved `CTR-*`; or any Must FR untestable; or primary user flow `Missing`; or outline-only PRD |
 
-Frontmatter keys: `feature`, `prd_source`, `reviewed_at`, `readiness`, `finding_counts`, `dual_brain_used`.
+Frontmatter keys: `feature`, `prd_source`, `reviewed_at`, `readiness`, `finding_counts`, `dual_brain_used`, `prd_review_path`, `complexity_score`, `phase_6_mode`.
 
 Tell user:
 
-- Gate status and whether to run `prd-to-tdd`
+- Path used, gate status, whether to run `prd-to-tdd`
 - Top 3 blockers if not `ready`
 - Path to review report
 
-**STOP** after Phase 5 unless user requests Phase 6.
+**STOP** after Phase 5 unless user requests Phase 7.
 
 ---
 
-## Phase 5b — Script Validation (recommended)
+## Phase 5b — Script Validation (required)
 
 From this skill package (symlink: `~/.cursor/skills/prd-review/`):
 
@@ -182,19 +231,19 @@ python scripts/validate-prd-review.py docs/reviews/YYYY-MM-DD-<feature>-prd-revi
 Run in the **target project**; path is to the review file under `docs/reviews/`.
 
 - Exit `0` → done
-- Exit `1` → fix reported lines, re-run
+- Exit `1` → fix reported lines, re-run (max 2 fix cycles)
 
 ---
 
-## Phase 6 — Clarification Loop (optional)
+## Phase 7 — Clarification Loop (optional)
 
 Only if user wants PRD fixes **in this session**.
 
 - Max **5** questions (one at a time; recommended option first — same spirit as `speckit-clarify`)
 - After each answer: patch PRD only with user approval; log under `## Clarifications` in PRD or review report
-- Re-run Phase 3–5 on changed sections; update gate
+- Re-run Phase 3–6 on changed sections; update gate; re-run Phase 5b
 
-If user defers: keep `needs-clarification`; pass `OQ-*` to `prd-to-tdd` Ch.7.
+If user defers: keep `needs-clarification`; pass `OQ-*` to `prd-to-tdd` Ch.8.
 
 ---
 
@@ -202,10 +251,10 @@ If user defers: keep `needs-clarification`; pass `OQ-*` to `prd-to-tdd` Ch.7.
 
 | Skill | Relationship |
 |-------|----------------|
-| **prd-to-tdd** | Run when gate is `ready`, or user accepts risk with documented `OQ-*` |
+| **prd-to-tdd** | Run when gate is `ready`, or user accepts risk with documented `OQ-*`; attach review for FR/OQ seed |
 | **speckit-clarify** | Interactive rewrites; run **prd-review** first for full audit + gate |
 | **ce-doc-review** | Broader brainstorm/plan docs; **prd-review** is PRD-specific |
-| **dual-brain** | Optional; not a dependency |
+| **dual-brain** | Required for enhanced/full paths when installed |
 | **idea2planning** | Author PRD before review if outline-only |
 
 ## Error Handling
@@ -213,8 +262,9 @@ If user defers: keep `needs-clarification`; pass `OQ-*` to `prd-to-tdd` Ch.7.
 | Situation | Action |
 |-----------|--------|
 | PRD outline-only | `blocked` + recommend `idea2planning` |
-| dual-brain missing | Mode A orchestrator-only; not an error |
-| User skips review | Warn: `prd-to-tdd` will multiply `OQ-*` and Phase 3b forks |
+| dual-brain missing | **standard** only; Phase 3b skip |
+| User skips Phase 6 on full path | Warn; downgrade confidence; note in Executive summary |
+| User skips review entirely | Warn: `prd-to-tdd` will multiply `OQ-*` and Phase 3b forks |
 | User forces `prd-to-tdd` on `blocked` | Proceed only if user explicitly accepts risk; list blockers once |
 
 ---

@@ -3,6 +3,9 @@ feature: order-cancel
 prd_source: docs/sample-prd-order-cancel.md
 reviewed_at: 2026-06-03
 readiness: needs-clarification
+prd_review_path: standard
+complexity_score: 2
+phase_6_mode: A
 dual_brain_used: false
 finding_counts:
   critical: 0
@@ -23,17 +26,24 @@ oq_draft_count: 1
 
 ## Executive summary
 
-Gate **needs-clarification**: one Must-path ambiguity (partial refund policy). No contradictions. Safe to run `prd-to-tdd` if user accepts documenting OQ-1 in Ch.7.
+Gate **needs-clarification** on **standard** path (Mode A, score 2): one Must-path ambiguity (partial refund policy). No contradictions. Safe to run `prd-to-tdd` if user accepts documenting OQ-1 in Ch.8.
 
 ## Coverage map
 
 | Category | Status | Notes |
 |----------|--------|-------|
-| Problem statement | Clear | … |
+| Problem statement | Clear | User pain stated |
 | Goals & success criteria | Partial | Missing p99 target |
+| User roles | Clear | Customer + admin |
+| In-scope features | Clear | Cancel + refund |
+| Out-of-scope | Clear | Returns after delivery |
 | Primary user journey | Clear | ≥5 steps |
+| Alternative paths | Partial | Partial shipment only implied |
+| Error / empty states | Partial | Generic error copy |
 | Acceptance criteria | Partial | Refund edge not testable |
-| Out-of-scope | Clear | … |
+| NFR (performance, security) | Partial | Latency without p99 |
+| Edge cases | Partial | Split shipment |
+| Terminology | Clear | Consistent order/refund terms |
 
 ## Findings
 

@@ -8,6 +8,9 @@ feature: <feature_slug>
 prd_source: <path or Google Docs URL>
 reviewed_at: YYYY-MM-DD
 readiness: ready | needs-clarification | blocked
+prd_review_path: standard | enhanced | full
+complexity_score: 0
+phase_6_mode: A | B | C
 dual_brain_used: true | false
 finding_counts:
   critical: 0
@@ -28,7 +31,7 @@ oq_draft_count: 0
 
 ## Executive summary
 
-(2–4 sentences: readiness gate, blocker count, whether `prd-to-tdd` is recommended.)
+(2–4 sentences: `prd_review_path` + gate, blocker count, Phase 6 mode, whether `prd-to-tdd` is recommended.)
 
 ## Coverage map
 
