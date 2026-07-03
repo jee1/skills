@@ -61,6 +61,7 @@ skills/
 3. Validate script (example):
 
    ```bash
+   ./scripts/run-tests.sh
    python prd-review/scripts/validate-prd-review.py docs/reviews/YYYY-MM-DD-<feature>-prd-review.md
    python prd-to-tdd/scripts/validate-tdd.py docs/design/2026-05-25-sample-order-cancel-tdd.md
    python prd-to-tdd/scripts/validate-tdd.py docs/design/2026-05-25-sample-order-cancel-tdd.md --narrative

@@ -58,11 +58,13 @@ PR 머지    → 이슈 닫힘 → registry status resolved
 
 PR에 기록: "Simplify 게이트: 통과 (스킬)" 또는 "Simplify 게이트: 통과 (체크리스트)".
 
-## 테스트 요구사항
+## 테스트·CI 요구사항
 
-- 레포가 쓰는 **CI와 동일한 명령** 실행 (`.github/workflows`, `package.json`, `pyproject.toml` 참고)
-- 테스트 실패 시 하네스 PR **차단**
-- 테스트 skip/disable 로 green 만들기 금지
+1. **로컬:** `./scripts/run-tests.sh` 가 있으면 PR 전에 반드시 실행 (이 레포 CI job과 동일).
+2. **존재하는 스위트만 실행:** `run-tests.sh` 는 없는 `test_*.py` 는 skip — 새 패키지 추가 시 스위트 목록에 경로 추가.
+3. **CI:** `.github/workflows/` 가 있으면 푸시 후 `gh pr checks` 로 job green 확인.
+4. Harness PR은 **로컬·CI 모두** 통과할 때까지 머지 후보로 올리지 않음.
+5. 테스트 skip/disable 로 green 만들기 금지.
 
 ## 레포 안전
 

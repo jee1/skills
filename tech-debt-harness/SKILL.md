@@ -45,9 +45,10 @@ description: >-
 - [ ] STOP — 이슈에 tech-debt-approved 될 때까지 대기
 - [ ] Phase 6: 라벨 확인; 브랜치 tech-debt/<이슈>-<slug>
 - [ ] Phase 7: 수정 구현 (분할 시 sub_item 하나만)
-- [ ] Phase 8: 테스트 실행 (반드시 통과)
+- [ ] Phase 8: 로컬 테스트 — `./scripts/run-tests.sh` 또는 프로젝트 테스트 (반드시 통과)
+- [ ] Phase 8b: PR 푸시 후 `gh pr checks` 로 CI green 확인 (워크플로 있을 때)
 - [ ] Phase 9: simplify 스킬 / harness-rules 단순화 게이트
-- [ ] Phase 10: gh pr create (Fixes #N)
+- [ ] Phase 10: gh pr create (Fixes #N) — CI 실패 시 PR 본문에 원인 기록·수정 후 재푸시
 ```
 
 ---
@@ -139,11 +140,35 @@ ISSUE=<N> ./harness.sh check-approval
 
 ---
 
-## Phase 7–8 — 수정 + 테스트
+## Phase 7–8 — 수정 + 테스트 + CI
 
 - 브랜치: `tech-debt/<이슈번호>-<짧은-slug>`
 - 범위: **한 건** (분할 시 `sub_item` 하나)
-- 프로젝트 테스트 명령을 green 될 때까지 실행 (`pytest`, `npm test` 등)
+
+### 8a. 로컬 unit test (필수)
+
+레포에 `scripts/run-tests.sh` 가 있으면 **CI와 동일한 명령**을 먼저 실행:
+
+```bash
+./scripts/run-tests.sh
+```
+
+없으면 README·`.github/workflows` 에서 프로젝트 테스트 명령을 찾아 실행 (`pytest`, `npm test` 등).
+
+**exit 0 이 아니면 PR 금지** — 이슈에 실패 로그 코멘트.
+
+### 8b. CI 확인 (워크플로 있을 때)
+
+`.github/workflows/` 가 있으면 PR 푸시 후:
+
+```bash
+gh pr checks --watch
+```
+
+`unit-tests`(또는 동등 job)가 **failure** 이면 머지하지 말고 로컬에서 재현·수정·재푸시.
+
+로컬 green + CI red 인 경우: 워크플로가 추가 스위트를 돌리는지, 경로·의존성 차이를 확인.
+
 - 범위 확대 없이 테스트 통과 불가 시 **이슈에 코멘트만** — PR 없음
 
 ---
@@ -167,7 +192,8 @@ Fixes #<이슈>
 ...
 
 ## 검증
-- [ ] 테스트 통과
+- [ ] `./scripts/run-tests.sh` 또는 프로젝트 테스트 통과 (로컬)
+- [ ] `gh pr checks` CI green (워크플로 있을 때)
 - [ ] Simplify 게이트 통과
 
 ## 감사(audit)
@@ -186,7 +212,8 @@ PR을 이슈에 링크. 머지로 이슈가 닫히면 다음 sync 에서 registr
 |------|------|
 | sync 후 항목 없음 | "신규 부채 없음" 보고 후 종료 |
 | 상위 항목 auto_fix 불가 | 이슈만; PR 없음 |
-| 테스트 실패 | PR 없음; 이슈 코멘트 |
+| 테스트 실패 (로컬) | PR 없음; 이슈 코멘트 |
+| CI checks 실패 | PR 유지하되 수정 커밋·재푸시; green 전 머지 금지 |
 | 잘못된 레포 | `origin` 이상 시 중단 |
 | gh 없음 | Phase 5 에서 중단 |
 
