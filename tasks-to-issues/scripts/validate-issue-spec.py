@@ -270,7 +270,7 @@ def cross_check(
 
     ac_upper = ac_id.upper().replace("ac-", "AC-")
     if ac_upper not in ac_table:
-        errors.append(ValidationError(0, "ac-unknown", f"ac_id {ac_upper} not found in TDD Ch.6 인수조건"))
+        errors.append(ValidationError(0, "ac-unknown", f"ac_id {ac_upper} not found in TDD acceptance criteria"))
         return errors
 
     _, acc_sec = _find_section(spec_body, SECTION_ALIASES["acceptance"])
@@ -278,8 +278,8 @@ def cross_check(
     spec_tests = {t.upper().replace("t-", "T-") for t in TEST_ID.findall(tests_sec)}
 
     tdd_tests_for_ac: set[str] = set()
-    ch6 = vt._chapter_slice(tdd_body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
-    _, test_sec = vt._subsection_content(ch6, r"###\s+테스트")
+    design_ch = vt._design_chapter_slice(tdd_body)
+    _, test_sec = vt._subsection_content(design_ch, r"###\s+(?:테스트|Tests)")
     for line in test_sec.splitlines():
         if not line.strip().startswith("|"):
             continue

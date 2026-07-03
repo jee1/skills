@@ -77,10 +77,18 @@ def _line_number(text: str, index: int) -> int:
     return text[:index].count("\n") + 1
 
 
-def _parse_ac_table(tdd_body: str) -> dict[str, str]:
-    """Return AC ID -> priority string from Ch.6 인수조건 table."""
+def _design_chapter_slice(tdd_body: str) -> str:
+    """Return detailed-design chapter (Korean Ch.6 or English Ch.7)."""
     ch6 = _chapter_slice(tdd_body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
-    _, ac_sec = _subsection_content(ch6, r"###\s+인수\s*조건")
+    if ch6.strip():
+        return ch6
+    return _chapter_slice(tdd_body, r"^##\s+7\.\s+Detailed\s+Design", r"^##\s+8\.\s+")
+
+
+def _parse_ac_table(tdd_body: str) -> dict[str, str]:
+    """Return AC ID -> priority string from design chapter 인수조건 / Acceptance Criteria table."""
+    chapter = _design_chapter_slice(tdd_body)
+    _, ac_sec = _subsection_content(chapter, r"###\s+(?:인수\s*조건|Acceptance\s+Criteria)")
     ac_priority: dict[str, str] = {}
     for line in ac_sec.splitlines():
         if not line.strip().startswith("|"):
@@ -103,8 +111,8 @@ def _parse_ac_table(tdd_body: str) -> dict[str, str]:
 
 def _parse_test_table(tdd_body: str) -> dict[str, bool]:
     """Return Test ID -> CI gate is yes."""
-    ch6 = _chapter_slice(tdd_body, r"^##\s+6\.\s+상세설계", r"^##\s+7\.\s+")
-    _, test_sec = _subsection_content(ch6, r"###\s+테스트")
+    chapter = _design_chapter_slice(tdd_body)
+    _, test_sec = _subsection_content(chapter, r"###\s+(?:테스트|Tests)")
     ci_by_test: dict[str, bool] = {}
     for line in test_sec.splitlines():
         if not line.strip().startswith("|"):
