@@ -31,17 +31,20 @@ description: >-
 |------|------|
 | `run` | 감사 파이프라인 전체 |
 | `issue` | GitHub 이슈 등록 (`DRY_RUN=1` 미리보기) |
-| `fix-start` | 승인 확인 + 작업 브랜치 (`ISSUE=` 필수) |
-| `fix-verify` / `fix-commit` / `fix-pr` | 테스트 → 커밋 → PR |
+| `fix-start` | 브랜치 + 검증 루프(통과까지, 영향 경로만) |
+| `fix` | fix-start → commit → pr |
 
 **이슈 처리 (승인 후):**
 
 ```bash
 ISSUE=638 ~/.cursor/skills/tech-debt-harness/harness.sh fix-start
-~/.cursor/skills/tech-debt-harness/harness.sh fix-verify
+# 검증 통과 후:
 ~/.cursor/skills/tech-debt-harness/harness.sh fix-commit
 ISSUE=638 ~/.cursor/skills/tech-debt-harness/harness.sh fix-pr
+# 또는: ISSUE=638 harness.sh fix
 ```
+
+`TEST_SCOPE=affected`(기본) — spec 파일만 `vitest run`. 전체는 `TEST_SCOPE=full`.
 
 **에이전트 enrichment (선택):** 더 정밀한 점수·분할이 필요하면 Cursor 채팅에서 raw audit 점수화 요청 후 `harness.sh continue`.
 

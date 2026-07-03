@@ -74,13 +74,13 @@ PR에 기록: "Simplify 게이트: 통과 (스킬)" 또는 "Simplify 게이트: 
 승인(`tech-debt-approved`) 후:
 
 ```bash
-ISSUE=<N> ./harness.sh fix-start
-./harness.sh fix-verify
+ISSUE=<N> ./harness.sh fix-start    # 브랜치 + 검증 루프(통과까지)
 ./harness.sh fix-commit
 ISSUE=<N> ./harness.sh fix-pr
 ```
 
 - `fix-start`: base 브랜치 pull → `tech-debt/<N>-<slug>` 생성 → `tech-debt-in-progress`
-- `fix-verify`: `scripts/run-tests.sh` / `npm test` / `pytest` 자동 탐지
+- **검증**: 기본 `TEST_SCOPE=affected` — 이슈의 영향 경로만 (`vitest run <spec.ts>` 등). 전체는 `TEST_SCOPE=full`
+- **루프**: 실패 시 수정 후 Enter로 재검증 (`FIX_UNTIL_PASS=1` 기본, `q` 중단)
 - 코드 수정 자체는 스크립트 밖 (에이전트 또는 직접 편집)
 - 상태: `docs/tech-debt/.active-fix.json`

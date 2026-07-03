@@ -71,12 +71,11 @@ EOF
     after_fix_start)
       cat <<EOF
 
-──────────────── 다음 단계 (복사해서 실행) ────────────────
+──────────────── 다음 단계 (검증 통과 후, 복사해서 실행) ────────────────
 cd "$WORKSPACE"
-# 코드 수정 (에이전트 또는 직접) 후:
-"$HARNESS" fix-verify
 "$HARNESS" fix-commit
 ISSUE=$issue_ref "$HARNESS" fix-pr
+# 또는 한 번에: ISSUE=$issue_ref "$HARNESS" fix
 ────────────────────────────────────────────────────────────
 EOF
       ;;
@@ -110,6 +109,15 @@ run_continue() {
   python3 "$SCRIPTS/sync-registry.py" --workspace "$WORKSPACE" --audit "$AUDIT" --registry "$REGISTRY"
 }
 
+run_fix_verify() {
+  local extra=(--workspace "$WORKSPACE")
+  [[ -n "${TEST_CMD:-}" ]] && extra+=(--cmd "$TEST_CMD")
+  [[ -n "${TEST_SCOPE:-}" ]] && extra+=(--scope "$TEST_SCOPE")
+  [[ "${FIX_UNTIL_PASS:-1}" == "1" ]] && extra+=(--until-pass)
+  [[ -n "${MAX_VERIFY_ATTEMPTS:-}" && "${MAX_VERIFY_ATTEMPTS:-0}" != "0" ]] && extra+=(--max-attempts "$MAX_VERIFY_ATTEMPTS")
+  python3 "$SCRIPTS/verify-fix.py" "${extra[@]}"
+}
+
 usage() {
   cat <<EOF
 사용법: harness.sh <명령> [옵션]
@@ -120,25 +128,27 @@ usage() {
   issue          GitHub 이슈 등록 (DRY_RUN=1 미리보기)
 
 이슈 처리 파이프라인 (승인 후):
-  fix-start      tech-debt-approved 확인 → 브랜치 생성 (ISSUE 필수)
-  fix-verify     테스트 실행
+  fix-start      승인 확인 → 브랜치 → 검증 루프(통과까지)  ★
   fix-commit     변경 커밋
-  fix-pr         push + PR 생성 (ISSUE 또는 .active-fix.json)
-  fix            fix-start → (수동 수정) 안내 — 한 번에 끝나지 않음
+  fix-pr         push + PR
+  fix            fix-start → fix-commit → fix-pr (한 번에)
+  fix-verify     검증만 (fix-start 에 포함됨; 수동 재실행용)
 
 기타:
   check-approval ISSUE=<번호>
 
 환경 변수:
   AUDIT, ISSUE, DRY_RUN, FORCE_ENRICH, ALLOW_DIRTY
+  SKIP_VERIFY=1        fix-start 에서 검증 생략
+  FIX_UNTIL_PASS=1     통과할 때까지 재검증 (fix-start 기본값)
+  TEST_SCOPE=affected  영향 경로만 테스트 (기본) | full
+  TEST_CMD=...         테스트 명령 직접 지정
+  MAX_VERIFY_ATTEMPTS  재시도 상한 (0=무제한)
+  SKIP_PR=1            fix 시 PR 생략
 
 예:
-  cd ~/git/myrepo && ~/.cursor/skills/tech-debt-harness/harness.sh run
-  ~/.cursor/skills/tech-debt-harness/harness.sh issue
   ISSUE=638 ~/.cursor/skills/tech-debt-harness/harness.sh fix-start
-  ~/.cursor/skills/tech-debt-harness/harness.sh fix-verify
-  ~/.cursor/skills/tech-debt-harness/harness.sh fix-commit
-  ISSUE=638 ~/.cursor/skills/tech-debt-harness/harness.sh fix-pr
+  ISSUE=638 ~/.cursor/skills/tech-debt-harness/harness.sh fix
 EOF
 }
 
@@ -185,13 +195,16 @@ case "$cmd" in
     extra=()
     [[ "${DRY_RUN:-0}" == "1" ]] && extra+=(--dry-run)
     python3 "$SCRIPTS/start-fix.py" --workspace "$WORKSPACE" --issue "$ISSUE" "${extra[@]}"
+    if [[ "${DRY_RUN:-0}" != "1" && "${SKIP_VERIFY:-0}" != "1" ]]; then
+      echo ""
+      echo "▶ 검증 루프 (영향 경로 스코프, 통과할 때까지) — 코드 수정 후 Enter"
+      run_fix_verify
+    fi
     print_next after_fix_start
     ;;
   fix-verify)
-    extra=()
-    [[ -n "${TEST_CMD:-}" ]] && extra+=(--cmd "$TEST_CMD")
-    python3 "$SCRIPTS/verify-fix.py" --workspace "$WORKSPACE" "${extra[@]}"
-    print_next after_fix_verify
+    run_fix_verify
+    print_next after_fix_start
     ;;
   fix-commit)
     extra=()
@@ -210,8 +223,10 @@ case "$cmd" in
   fix)
     require_issue
     "$0" fix-start
-    echo ""
-    echo "※ 코드 수정은 자동화되지 않습니다. 수정 후 fix-verify → fix-commit → fix-pr 실행"
+    "$0" fix-commit
+    if [[ "${SKIP_PR:-0}" != "1" ]]; then
+      "$0" fix-pr
+    fi
     ;;
   run|mechanical)
     python3 "$SCRIPTS/run-audit.py" --workspace "$WORKSPACE" --output "$RAW"

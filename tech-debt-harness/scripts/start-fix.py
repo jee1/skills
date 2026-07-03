@@ -133,7 +133,10 @@ def main() -> int:
 
     save_json(active_fix_path(workspace), state)
     print(json.dumps(state, ensure_ascii=False, indent=2))
-    print(f"\n✓ 브랜치 {branch} — 코드 수정 후 fix-verify → fix-commit → fix-pr", file=sys.stderr)
+    print(
+        f"\n✓ 브랜치 {branch} — fix-start 가 검증 루프를 이어갑니다 (SKIP_VERIFY=1 이면 생략)",
+        file=sys.stderr,
+    )
     return 0
 
 

@@ -193,6 +193,64 @@ def git_default_branch(workspace: Path) -> str:
     return "main"
 
 
+def detect_scoped_test_command(workspace: Path, affected_paths: list[str]) -> list[str] | None:
+    """영향 경로만 검증 — 전체 npm test / monorepo build 회피."""
+    if not affected_paths:
+        return None
+
+    vitest_suffixes = (".spec.ts", ".spec.tsx", ".test.ts", ".test.tsx")
+    vitest_files = [p for p in affected_paths if p.endswith(vitest_suffixes)]
+    if vitest_files:
+        pkg = workspace / "package.json"
+        if pkg.exists():
+            try:
+                raw = pkg.read_text(encoding="utf-8")
+                if "vitest" in raw:
+                    return ["npx", "vitest", "run", *vitest_files, "--run"]
+            except OSError:
+                pass
+
+    jest_suffixes = (".spec.js", ".test.js", ".spec.jsx", ".test.jsx")
+    jest_files = [p for p in affected_paths if p.endswith(jest_suffixes)]
+    if jest_files:
+        pkg = workspace / "package.json"
+        if pkg.exists():
+            try:
+                data = json.loads(pkg.read_text(encoding="utf-8"))
+                scripts = data.get("scripts") or {}
+                if "test" in scripts:
+                    return ["npx", "jest", *jest_files]
+            except (json.JSONDecodeError, OSError):
+                pass
+
+    pytest_files = [
+        p
+        for p in affected_paths
+        if p.endswith(".py") and ("test" in p.lower() or "/tests/" in p.replace("\\", "/"))
+    ]
+    if pytest_files:
+        return ["python3", "-m", "pytest", "-q", *pytest_files]
+
+    return None
+
+
+def resolve_test_command(
+    workspace: Path,
+    *,
+    affected_paths: list[str] | None = None,
+    scope: str = "affected",
+    explicit_cmd: str | None = None,
+) -> list[str] | None:
+    if explicit_cmd:
+        return explicit_cmd.split()
+    paths = affected_paths or []
+    if scope != "full" and paths:
+        scoped = detect_scoped_test_command(workspace, paths)
+        if scoped:
+            return scoped
+    return detect_test_command(workspace)
+
+
 def detect_test_command(workspace: Path) -> list[str] | None:
     candidates: list[list[str]] = []
     if (workspace / "scripts" / "run-tests.sh").is_file():

@@ -139,6 +139,18 @@ class TestIssueMeta(unittest.TestCase):
     def test_slugify(self):
         self.assertIn("ollama", _lib.slugify_branch("ollama-connection.spec.ts"))
 
+    def test_scoped_vitest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "package.json").write_text(
+                '{"devDependencies":{"vitest":"1.0.0"}}', encoding="utf-8"
+            )
+            cmd = _lib.detect_scoped_test_command(root, ["packages/foo/src/bar.spec.ts"])
+        self.assertIsNotNone(cmd)
+        assert cmd is not None
+        self.assertEqual(cmd[0:3], ["npx", "vitest", "run"])
+        self.assertIn("bar.spec.ts", cmd[3])
+
 
 if __name__ == "__main__":
     unittest.main()
