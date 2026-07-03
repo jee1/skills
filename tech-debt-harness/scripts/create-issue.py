@@ -142,7 +142,15 @@ def main() -> int:
     labels = [TECH_DEBT_LABEL, PENDING_LABEL, CATEGORY_LABELS.get(str(item.get("category")), "tech-debt/code")]
 
     if args.dry_run:
+        print(
+            "※ DRY RUN — GitHub에 이슈를 만들지 않았습니다. 실제 등록은 --dry-run 없이 실행하세요.\n",
+            file=sys.stderr,
+        )
         print(json.dumps({"title": title, "labels": labels, "body_preview": body[:500]}, ensure_ascii=False, indent=2))
+        print(
+            f"\n실제 등록 예:\n  AUDIT={audit_path} python3 .../create-issue.py --workspace {workspace} --audit {audit_path}",
+            file=sys.stderr,
+        )
         return 0
 
     ensure_labels(workspace, [TECH_DEBT_LABEL, PENDING_LABEL, APPROVED_LABEL, IN_PROGRESS_LABEL, *CATEGORY_LABELS.values()])

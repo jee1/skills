@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 기술 부채 하네스 — audit → enrich → validate → prioritize → sync → issue
+# 기술 부채 하네스 — audit → issue → fix → PR
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -12,28 +12,24 @@ RAW="$OUT_DIR/${DATE}-raw-audit.json"
 AUDIT="${AUDIT:-$OUT_DIR/${DATE}-audit.json}"
 REGISTRY="$OUT_DIR/registry.json"
 
+require_issue() {
+  if [[ -z "${ISSUE:-}" ]]; then
+    echo "ISSUE=<번호> 필요" >&2
+    exit 1
+  fi
+}
+
 # ── 복사용 다음 단계 안내 ─────────────────────────────────────────────
 print_next() {
   local step="${1:-}"
+  local issue_ref="${ISSUE:-<번호>}"
   case "$step" in
     after_audit)
       cat <<EOF
 
 ──────────────── 다음 단계 (복사해서 실행) ────────────────
-# 한 번에 끝내기 (규칙 기반 점수화 + validate/prioritize/sync):
 cd "$WORKSPACE"
 "$HARNESS" run
-
-# 또는 단계별:
-"$HARNESS" enrich
-AUDIT="$AUDIT" "$HARNESS" validate
-AUDIT="$AUDIT" "$HARNESS" prioritize
-AUDIT="$AUDIT" "$HARNESS" sync
-DRY_RUN=1 "$HARNESS" issue
-
-# 더 정밀한 점수화가 필요하면 Cursor 채팅에 붙여넣기:
-# docs/tech-debt/${DATE}-raw-audit.json 을 점수화해서 audit.json 으로 enrichment 해줘
-# (완료 후) AUDIT="$AUDIT" "$HARNESS" continue
 ────────────────────────────────────────────────────────────
 EOF
       ;;
@@ -53,16 +49,53 @@ EOF
 ──────────────── 다음 단계 (복사해서 실행) ────────────────
 cd "$WORKSPACE"
 DRY_RUN=1 "$HARNESS" issue
-# 승인 후 이슈에 tech-debt-approved 라벨 → 수정·PR (SKILL.md Phase 6+)
+"$HARNESS" issue
 ────────────────────────────────────────────────────────────
 EOF
       ;;
     after_issue)
       cat <<EOF
 
-──────────────── 다음 단계 ────────────────
-GitHub 이슈에 tech-debt-approved 라벨이 붙으면 Cursor 채팅:
-# 이슈 #<번호> 기술부채 수정하고 PR 올려줘
+──────────────── 다음 단계 (승인 후, 복사해서 실행) ────────────────
+cd "$WORKSPACE"
+# 1) GitHub에서 이슈에 tech-debt-approved 라벨 추가
+# 2) 처리 시작 (브랜치 생성):
+ISSUE=$issue_ref "$HARNESS" fix-start
+# 3) 코드 수정 후:
+"$HARNESS" fix-verify
+"$HARNESS" fix-commit
+ISSUE=$issue_ref "$HARNESS" fix-pr
+────────────────────────────────────────────────────────────
+EOF
+      ;;
+    after_fix_start)
+      cat <<EOF
+
+──────────────── 다음 단계 (복사해서 실행) ────────────────
+cd "$WORKSPACE"
+# 코드 수정 (에이전트 또는 직접) 후:
+"$HARNESS" fix-verify
+"$HARNESS" fix-commit
+ISSUE=$issue_ref "$HARNESS" fix-pr
+────────────────────────────────────────────────────────────
+EOF
+      ;;
+    after_fix_verify)
+      cat <<EOF
+
+──────────────── 다음 단계 (복사해서 실행) ────────────────
+cd "$WORKSPACE"
+"$HARNESS" fix-commit
+ISSUE=$issue_ref "$HARNESS" fix-pr
+────────────────────────────────────────────────────────────
+EOF
+      ;;
+    after_fix_commit)
+      cat <<EOF
+
+──────────────── 다음 단계 (복사해서 실행) ────────────────
+cd "$WORKSPACE"
+ISSUE=$issue_ref "$HARNESS" fix-pr
 ────────────────────────────────────────────────────────────
 EOF
       ;;
@@ -72,8 +105,8 @@ EOF
 }
 
 run_continue() {
-  AUDIT="$AUDIT" python3 "$SCRIPTS/validate-audit.py" "$AUDIT"
-  AUDIT="$AUDIT" python3 "$SCRIPTS/prioritize.py" --audit "$AUDIT" --print-top
+  python3 "$SCRIPTS/validate-audit.py" "$AUDIT"
+  python3 "$SCRIPTS/prioritize.py" --audit "$AUDIT" --print-top
   python3 "$SCRIPTS/sync-registry.py" --workspace "$WORKSPACE" --audit "$AUDIT" --registry "$REGISTRY"
 }
 
@@ -81,28 +114,31 @@ usage() {
   cat <<EOF
 사용법: harness.sh <명령> [옵션]
 
-명령:
-  run            ★ 권장: audit → enrich → validate → prioritize → sync (한 번에)
-  audit          정적 분석만 → raw-audit.json
-  enrich         raw → 규칙 기반 audit.json (--force 로 덮어쓰기)
-  continue       validate → prioritize → sync (audit.json 이미 있을 때)
-  validate       점수화 audit JSON 검증
-  prioritize     audit 항목 우선순위 정렬
-  sync           open 이슈 스킵 / 해결 항목 제거 (registry)
-  issue          상위 항목 GitHub 이슈 생성
-  check-approval 이슈에 tech-debt-approved 있는지 확인
-  mechanical     audit + enrich 안내 (run 과 동일, 이름 호환)
+등록 파이프라인:
+  run            audit → enrich → validate → prioritize → sync
+  audit / enrich / continue / validate / prioritize / sync
+  issue          GitHub 이슈 등록 (DRY_RUN=1 미리보기)
+
+이슈 처리 파이프라인 (승인 후):
+  fix-start      tech-debt-approved 확인 → 브랜치 생성 (ISSUE 필수)
+  fix-verify     테스트 실행
+  fix-commit     변경 커밋
+  fix-pr         push + PR 생성 (ISSUE 또는 .active-fix.json)
+  fix            fix-start → (수동 수정) 안내 — 한 번에 끝나지 않음
+
+기타:
+  check-approval ISSUE=<번호>
 
 환경 변수:
-  AUDIT          점수화 audit JSON (기본: docs/tech-debt/<오늘>-audit.json)
-  ITEM_ID        issue 시 부채 ID 지정
-  ISSUE          check-approval 시 이슈 번호
-  DRY_RUN        1 이면 issue dry-run
-  FORCE_ENRICH   1 이면 enrich 시 기존 audit 덮어쓰기
+  AUDIT, ISSUE, DRY_RUN, FORCE_ENRICH, ALLOW_DIRTY
 
 예:
   cd ~/git/myrepo && ~/.cursor/skills/tech-debt-harness/harness.sh run
-  DRY_RUN=1 ~/.cursor/skills/tech-debt-harness/harness.sh issue
+  ~/.cursor/skills/tech-debt-harness/harness.sh issue
+  ISSUE=638 ~/.cursor/skills/tech-debt-harness/harness.sh fix-start
+  ~/.cursor/skills/tech-debt-harness/harness.sh fix-verify
+  ~/.cursor/skills/tech-debt-harness/harness.sh fix-commit
+  ISSUE=638 ~/.cursor/skills/tech-debt-harness/harness.sh fix-pr
 EOF
 }
 
@@ -141,11 +177,41 @@ case "$cmd" in
     print_next after_issue
     ;;
   check-approval)
-    if [[ -z "${ISSUE:-}" ]]; then
-      echo "ISSUE=<번호> 필요" >&2
-      exit 1
-    fi
+    require_issue
     python3 "$SCRIPTS/check-approval.py" --workspace "$WORKSPACE" --issue "$ISSUE"
+    ;;
+  fix-start)
+    require_issue
+    extra=()
+    [[ "${DRY_RUN:-0}" == "1" ]] && extra+=(--dry-run)
+    python3 "$SCRIPTS/start-fix.py" --workspace "$WORKSPACE" --issue "$ISSUE" "${extra[@]}"
+    print_next after_fix_start
+    ;;
+  fix-verify)
+    extra=()
+    [[ -n "${TEST_CMD:-}" ]] && extra+=(--cmd "$TEST_CMD")
+    python3 "$SCRIPTS/verify-fix.py" --workspace "$WORKSPACE" "${extra[@]}"
+    print_next after_fix_verify
+    ;;
+  fix-commit)
+    extra=()
+    [[ "${DRY_RUN:-0}" == "1" ]] && extra+=(--dry-run)
+    [[ -n "${COMMIT_MSG:-}" ]] && extra+=(--message "$COMMIT_MSG")
+    python3 "$SCRIPTS/fix-commit.py" --workspace "$WORKSPACE" "${extra[@]}"
+    print_next after_fix_commit
+    ;;
+  fix-pr)
+    extra=()
+    [[ "${DRY_RUN:-0}" == "1" ]] && extra+=(--dry-run)
+    pr_args=(--workspace "$WORKSPACE")
+    [[ -n "${ISSUE:-}" ]] && pr_args+=(--issue "$ISSUE")
+    python3 "$SCRIPTS/create-pr.py" "${pr_args[@]}" "${extra[@]}"
+    ;;
+  fix)
+    require_issue
+    "$0" fix-start
+    echo ""
+    echo "※ 코드 수정은 자동화되지 않습니다. 수정 후 fix-verify → fix-commit → fix-pr 실행"
     ;;
   run|mechanical)
     python3 "$SCRIPTS/run-audit.py" --workspace "$WORKSPACE" --output "$RAW"

@@ -68,3 +68,19 @@ PR에 기록: "Simplify 게이트: 통과 (스킬)" 또는 "Simplify 게이트: 
 
 - `git remote get-url origin` 이 기대한 워크스페이스에서만 `gh issue create`
 - dry-run 표에 origin URL 표시
+
+## 이슈 처리 스크립트
+
+승인(`tech-debt-approved`) 후:
+
+```bash
+ISSUE=<N> ./harness.sh fix-start
+./harness.sh fix-verify
+./harness.sh fix-commit
+ISSUE=<N> ./harness.sh fix-pr
+```
+
+- `fix-start`: base 브랜치 pull → `tech-debt/<N>-<slug>` 생성 → `tech-debt-in-progress`
+- `fix-verify`: `scripts/run-tests.sh` / `npm test` / `pytest` 자동 탐지
+- 코드 수정 자체는 스크립트 밖 (에이전트 또는 직접 편집)
+- 상태: `docs/tech-debt/.active-fix.json`

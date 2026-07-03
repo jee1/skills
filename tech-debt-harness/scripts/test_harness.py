@@ -129,5 +129,16 @@ class TestMechanicalEnrich(unittest.TestCase):
         self.assertIn("foo.spec.ts", out["items"][0]["affected_paths"][0])
 
 
+class TestIssueMeta(unittest.TestCase):
+    def test_parse_issue_body(self):
+        body = "<!-- tech-debt-fingerprint: abcdef0123456789 -->\n<!-- tech-debt-id: TD-001 -->"
+        meta = _lib.parse_issue_body_meta(body)
+        self.assertEqual(meta["fingerprint"], "abcdef0123456789")
+        self.assertEqual(meta["td_id"], "TD-001")
+
+    def test_slugify(self):
+        self.assertIn("ollama", _lib.slugify_branch("ollama-connection.spec.ts"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
@@ -132,3 +133,102 @@ def git_remote_origin(workspace: Path) -> str | None:
 
 def today_str() -> str:
     return date.today().isoformat()
+
+
+ACTIVE_FIX_FILE = ".active-fix.json"
+
+
+def active_fix_path(workspace: Path) -> Path:
+    return workspace / "docs" / "tech-debt" / ACTIVE_FIX_FILE
+
+
+def slugify_branch(text: str, max_len: int = 48) -> str:
+    text = re.sub(r"^\[기술부채\]\s*", "", text, flags=re.I)
+    text = re.sub(r"[^a-zA-Z0-9가-힣]+", "-", text).strip("-").lower()
+    if not text:
+        return "fix"
+    # ASCII slug for branch names — take last meaningful segment if path-like
+    parts = [p for p in text.split("-") if p]
+    if len(parts) > 4:
+        parts = parts[-4:]
+    slug = "-".join(parts)
+    return slug[:max_len].rstrip("-")
+
+
+def parse_issue_body_meta(body: str) -> dict[str, str]:
+    meta: dict[str, str] = {}
+    for key, pattern in (
+        ("fingerprint", r"tech-debt-fingerprint:\s*([a-f0-9]+)"),
+        ("td_id", r"tech-debt-id:\s*(TD-\d+)"),
+    ):
+        m = re.search(pattern, body, re.I)
+        if m:
+            meta[key] = m.group(1)
+    audit_m = re.search(r"감사\(audit\):\s*`([^`]+)`", body)
+    if audit_m:
+        meta["audit_path"] = audit_m.group(1)
+    return meta
+
+
+def gh_issue_view(workspace: Path, issue: int) -> dict[str, Any] | None:
+    code, out, err = run_cmd(
+        ["gh", "issue", "view", str(issue), "--json", "number,title,body,labels,state,url"],
+        workspace,
+    )
+    if code != 0:
+        print(err or out, file=sys.stderr)
+        return None
+    return json.loads(out)
+
+
+def git_default_branch(workspace: Path) -> str:
+    code, out, _ = run_cmd(["git", "symbolic-ref", "refs/remotes/origin/HEAD"], workspace)
+    if code == 0 and out.strip():
+        ref = out.strip().split("/")[-1]
+        if ref:
+            return ref
+    code, out, _ = run_cmd(["gh", "repo", "view", "--json", "defaultBranchRef", "-q", ".defaultBranchRef.name"], workspace)
+    if code == 0 and out.strip():
+        return out.strip()
+    return "main"
+
+
+def detect_test_command(workspace: Path) -> list[str] | None:
+    candidates: list[list[str]] = []
+    if (workspace / "scripts" / "run-tests.sh").is_file():
+        candidates.append(["bash", "scripts/run-tests.sh"])
+    pkg = workspace / "package.json"
+    if pkg.exists():
+        try:
+            data = json.loads(pkg.read_text(encoding="utf-8"))
+            scripts = data.get("scripts") or {}
+            if "test" in scripts and scripts["test"] and "no test" not in scripts["test"].lower():
+                candidates.append(["npm", "test"])
+        except json.JSONDecodeError:
+            pass
+    if (workspace / "pyproject.toml").exists() or (workspace / "pytest.ini").exists():
+        candidates.append(["python3", "-m", "pytest", "-q"])
+    makefile = workspace / "Makefile"
+    if makefile.exists() and re.search(r"^test:", makefile.read_text(encoding="utf-8", errors="replace"), re.M):
+        candidates.append(["make", "test"])
+    return candidates[0] if candidates else None
+
+
+def find_audit_item(workspace: Path, fingerprint: str | None, td_id: str | None) -> tuple[Path | None, dict[str, Any] | None]:
+    debt_dir = workspace / "docs" / "tech-debt"
+    if not debt_dir.is_dir():
+        return None, None
+    audit_files = sorted(debt_dir.glob("*-audit.json"), reverse=True)
+    for path in audit_files:
+        if path.name.endswith("-raw-audit.json"):
+            continue
+        try:
+            audit = load_json(path)
+        except (json.JSONDecodeError, OSError):
+            continue
+        for item in audit.get("items") or []:
+            if fingerprint and item.get("fingerprint") == fingerprint:
+                return path, item
+            if td_id and item.get("id") == td_id:
+                return path, item
+    return None, None
