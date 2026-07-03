@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-07-03",
+  "workspace": "/path/to/target-repo",
+  "source_raw": "docs/tech-debt/2026-07-03-raw-audit.json",
+  "items": [
+    {
+      "id": "TD-001",
+      "fingerprint": "e3b0c44298fc1c14",
+      "category": "test_debt",
+      "title": "주문 취소 API 통합 테스트 부재",
+      "description": "취소 엔드포인트는 단위 테스트만 있고 HTTP 수준 회귀 검증이 없음.",
+      "evidence": ["test-scan: tests/integration/ 없음", "src/routes/cancel.ts 대응 테스트 없음"],
+      "impact": 4,
+      "risk": 4,
+      "effort": 3,
+      "priority": 32,
+      "business_justification": "지난 분기 환불 회귀가 스테이징에서 두 차례 발생.",
+      "suggested_fix": "supertest로 tests/integration/cancel.test.ts 추가; 409·200 경로 커버.",
+      "affected_paths": ["tests/integration/cancel.test.ts", "src/routes/cancel.ts"],
+      "estimated_files": 2,
+      "splittable": true,
+      "sub_items": [
+        {
+          "title": "409 충돌 통합 테스트 추가",
+          "description": "이미 취소된 주문 경로를 증명하는 단일 테스트",
+          "effort": 2,
+          "estimated_files": 1
+        }
+      ],
+      "auto_fix_eligible": true
+    },
+    {
+      "id": "TD-002",
+      "fingerprint": "9f86d081884c7d65",
+      "category": "dependency_debt",
+      "title": "lodash@4.17.15 알려진 advisory",
+      "description": "npm audit이 prototype pollution high 심각도를 보고함.",
+      "evidence": ["npm audit: lodash (high)"],
+      "impact": 3,
+      "risk": 5,
+      "effort": 2,
+      "priority": 32,
+      "business_justification": "운영 번들에 포함된 의존성.",
+      "suggested_fix": "lodash 4.17.21로 업그레이드 후 npm test.",
+      "affected_paths": ["package.json", "package-lock.json"],
+      "estimated_files": 2,
+      "splittable": false,
+      "sub_items": [],
+      "auto_fix_eligible": true
+    }
+  ],
+  "top_item_id": "TD-001"
+}

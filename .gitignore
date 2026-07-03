@@ -11,3 +11,5 @@ venv/
 
 # Local install artifacts
 *.local.md
+docs/tech-debt/*-raw-audit.json
+docs/tech-debt/registry.json
