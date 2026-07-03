@@ -16,6 +16,27 @@ description: >-
 
 **전제:** `gh` 인증 완료; `git remote origin` 이 의도한 레포와 일치.
 
+## 빠른 시작 (터미널)
+
+대상 레포 루트에서 **한 줄**로 기계 파이프라인 실행:
+
+```bash
+~/.cursor/skills/tech-debt-harness/harness.sh run
+```
+
+`audit` → 규칙 기반 `enrich` → `validate` → `prioritize` → `sync` 까지 자동.  
+각 명령 끝에 **복사용 다음 단계**가 출력된다.
+
+| 명령 | 설명 |
+|------|------|
+| `run` | 위 전체 (권장) |
+| `audit` | 정적 분석만 |
+| `enrich` | raw → audit.json (규칙 기반) |
+| `continue` | audit.json 있을 때 validate→prioritize→sync |
+| `issue` | GitHub 이슈 등록 (`DRY_RUN=1` 로 미리보기) |
+
+**에이전트 enrichment (선택):** 더 정밀한 점수·분할이 필요하면 Cursor 채팅에서 raw audit 점수화 요청 후 `harness.sh continue`.
+
 ## 참고 문서
 
 | 파일 | 용도 |

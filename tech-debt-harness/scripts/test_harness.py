@@ -95,5 +95,39 @@ class TestPrioritize(unittest.TestCase):
         self.assertTrue(out["items"][0]["auto_fix_eligible"])
 
 
+enrich_mod = _load("mechanical-enrich")
+
+
+class TestMechanicalEnrich(unittest.TestCase):
+    def test_skips_next_build_output(self):
+        raw = {
+            "generated_at": "2026-07-03",
+            "workspace": "/tmp/repo",
+            "findings": [
+                {
+                    "category": "code_debt",
+                    "title": "demo/.next/dev/app.js에 TODO/FIXME 과다",
+                    "description": "d",
+                    "evidence": ["// TODO"],
+                    "affected_paths": ["demo/.next/dev/app.js"],
+                    "source": "todo-scan",
+                    "fingerprint": "abc123",
+                },
+                {
+                    "category": "code_debt",
+                    "title": "src/foo.spec.ts에 TODO/FIXME 과다",
+                    "description": "d",
+                    "evidence": ["// TODO"],
+                    "affected_paths": ["src/foo.spec.ts"],
+                    "source": "todo-scan",
+                    "fingerprint": "def456",
+                },
+            ],
+        }
+        out = enrich_mod.mechanical_enrich(raw)
+        self.assertEqual(len(out["items"]), 1)
+        self.assertIn("foo.spec.ts", out["items"][0]["affected_paths"][0])
+
+
 if __name__ == "__main__":
     unittest.main()

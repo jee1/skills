@@ -43,7 +43,10 @@ def _scan_todos(workspace: Path) -> list[FINDING]:
     for path in workspace.rglob("*"):
         if not path.is_file():
             continue
-        if any(part in {".git", "node_modules", ".venv", "venv", "dist", "build"} for part in path.parts):
+        if any(
+            part in {".git", "node_modules", ".venv", "venv", "dist", "build", ".next", "vendor-chunks"}
+            for part in path.parts
+        ):
             continue
         if path.suffix.lower() not in {".py", ".js", ".ts", ".tsx", ".go", ".rs", ".md", ".sh"}:
             continue
