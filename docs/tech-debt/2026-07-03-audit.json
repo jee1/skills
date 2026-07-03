@@ -1,0 +1,88 @@
+{
+  "generated_at": "2026-07-03",
+  "workspace": "/home/jee1lee/git/skills",
+  "source_raw": "docs/tech-debt/2026-07-03-raw-audit.json",
+  "agent_notes": "정적 스캔 0건; 레포 레이아웃·스크립트 분석으로 enrichment.",
+  "items": [
+    {
+      "id": "TD-001",
+      "fingerprint": "8c2f4a91b0e3d712",
+      "category": "infrastructure_debt",
+      "title": "validator 테스트용 CI 워크플로 없음",
+      "description": "prd-to-tdd, tdd-to-tasks, tasks-to-issues, tech-debt-harness 네 unittest 모듈이 있으나 push/PR 시 실행하는 .github/workflows 가 없음. validator 회귀가 머지될 수 있음.",
+      "evidence": [
+        ".github/workflows 디렉터리 없음",
+        "prd-to-tdd/scripts/test_validate_tdd.py",
+        "tdd-to-tasks/scripts/test_validate_tasks.py",
+        "tasks-to-issues/scripts/test_validate_issue_spec.py",
+        "tech-debt-harness/scripts/test_harness.py"
+      ],
+      "impact": 4,
+      "risk": 4,
+      "effort": 2,
+      "priority": 32,
+      "business_justification": "이 레포는 에이전트 스킬을 배포하며 정확성이 validator에 의존함. 조용한 깨짐은 prd-to-tdd·tasks-to-issues 파이프라인을 막음.",
+      "suggested_fix": "push·pull_request 시 네 테스트 모듈을 실행하는 .github/workflows/ci.yml 및 scripts/run-tests.sh 추가.",
+      "affected_paths": [".github/workflows/ci.yml"],
+      "estimated_files": 1,
+      "splittable": false,
+      "sub_items": [],
+      "auto_fix_eligible": true,
+      "issue_number": 1
+    },
+    {
+      "id": "TD-003",
+      "fingerprint": "b7c8d9e0f1a23456",
+      "category": "documentation_debt",
+      "title": "README에 테스트 일괄 실행 명령 없음",
+      "description": "README는 validator별 명령만 있고 커밋 전 전체 unittest를 돌리는 한 줄이 없음.",
+      "evidence": ["README.md Maintaining 절에 개별 validator만 나열"],
+      "impact": 3,
+      "risk": 2,
+      "effort": 1,
+      "priority": 25,
+      "business_justification": "기여자가 문서화된 일괄 명령 없이 테스트를 건너뛸 수 있음.",
+      "suggested_fix": "scripts/run-tests.sh 추가 후 README에 링크 (CI와 함께).",
+      "affected_paths": ["README.md", "scripts/run-tests.sh"],
+      "estimated_files": 2,
+      "splittable": false,
+      "sub_items": [],
+      "auto_fix_eligible": true
+    },
+    {
+      "id": "TD-002",
+      "fingerprint": "a4d5e6f7182930ab",
+      "category": "code_debt",
+      "title": "validate 스크립트 importlib 로더 중복",
+      "description": "generate-issue-specs.py와 validate-issue-spec.py가 동일한 _load_validate_tasks()를 importlib로 각각 임베드함.",
+      "evidence": [
+        "tasks-to-issues/scripts/generate-issue-specs.py:21-27",
+        "tasks-to-issues/scripts/validate-issue-spec.py:56-62"
+      ],
+      "impact": 3,
+      "risk": 2,
+      "effort": 4,
+      "priority": 10,
+      "business_justification": "경로 변경 시 로더가 어긋나기 쉬움. CI보다 긴급도는 낮음.",
+      "suggested_fix": "scripts/_loader.py로 추출하거나 소형 내부 패키지로 통합.",
+      "affected_paths": [
+        "tasks-to-issues/scripts/generate-issue-specs.py",
+        "tasks-to-issues/scripts/validate-issue-spec.py"
+      ],
+      "estimated_files": 4,
+      "splittable": true,
+      "sub_items": [
+        {
+          "title": "_load_validate_tasks를 tasks-to-issues/scripts/_loader.py로 추출",
+          "description": "두 스크립트가 import하는 단일 모듈",
+          "effort": 2,
+          "estimated_files": 3
+        }
+      ],
+      "auto_fix_eligible": false
+    }
+  ],
+  "top_item_id": "TD-001",
+  "skipped_duplicates": [],
+  "synced_at": "2026-07-03"
+}
